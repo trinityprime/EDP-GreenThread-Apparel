@@ -4,6 +4,7 @@ using Microsoft.EntityFrameworkCore.Metadata.Internal;
 
 namespace LearningAPI.Models
 {
+    //test skibidi
     public class Tutorial
     {
         public int Id { get; set; }
