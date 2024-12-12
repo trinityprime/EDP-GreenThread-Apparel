@@ -5,6 +5,7 @@ using System.Text.Json.Serialization;
 
 namespace LearningAPI.Models
 {
+    // user yay
     public class User
     {
         public int Id { get; set; }
