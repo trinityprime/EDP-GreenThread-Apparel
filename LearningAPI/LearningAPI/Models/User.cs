@@ -5,7 +5,7 @@ using System.Text.Json.Serialization;
 
 namespace LearningAPI.Models
 {
-    // user yay
+    // user yayskibii
     public class User
     {
         public int Id { get; set; }
