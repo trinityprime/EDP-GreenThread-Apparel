@@ -4326,23 +4326,23 @@
     ]
   },
   "packageFolders": {
-    "C:\\Users\\ryanx\\.nuget\\packages\\": {},
+    "C:\\Users\\shaza\\.nuget\\packages\\": {},
     "C:\\Program Files (x86)\\Microsoft Visual Studio\\Shared\\NuGetPackages": {}
   },
   "project": {
     "version": "1.0.0",
     "restore": {
-      "projectUniqueName": "C:\\Users\\ryanx\\Source\\Repos\\EDP-GreenThread-Apparel\\LearningAPI\\LearningAPI\\LearningAPI.csproj",
+      "projectUniqueName": "C:\\Users\\shaza\\Source\\Repos\\EDP-GreenThread-Apparel\\LearningAPI\\LearningAPI\\LearningAPI.csproj",
       "projectName": "LearningAPI",
-      "projectPath": "C:\\Users\\ryanx\\Source\\Repos\\EDP-GreenThread-Apparel\\LearningAPI\\LearningAPI\\LearningAPI.csproj",
-      "packagesPath": "C:\\Users\\ryanx\\.nuget\\packages\\",
-      "outputPath": "C:\\Users\\ryanx\\Source\\Repos\\EDP-GreenThread-Apparel\\LearningAPI\\LearningAPI\\obj\\",
+      "projectPath": "C:\\Users\\shaza\\Source\\Repos\\EDP-GreenThread-Apparel\\LearningAPI\\LearningAPI\\LearningAPI.csproj",
+      "packagesPath": "C:\\Users\\shaza\\.nuget\\packages\\",
+      "outputPath": "C:\\Users\\shaza\\Source\\Repos\\EDP-GreenThread-Apparel\\LearningAPI\\LearningAPI\\obj\\",
       "projectStyle": "PackageReference",
       "fallbackFolders": [
         "C:\\Program Files (x86)\\Microsoft Visual Studio\\Shared\\NuGetPackages"
       ],
       "configFilePaths": [
-        "C:\\Users\\ryanx\\AppData\\Roaming\\NuGet\\NuGet.Config",
+        "C:\\Users\\shaza\\AppData\\Roaming\\NuGet\\NuGet.Config",
         "C:\\Program Files (x86)\\NuGet\\Config\\Microsoft.VisualStudio.FallbackLocation.config",
         "C:\\Program Files (x86)\\NuGet\\Config\\Microsoft.VisualStudio.Offline.config"
       ],
