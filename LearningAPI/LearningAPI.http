@@ -1,0 +1,123 @@
+﻿@LearningAPI_HostAddress = https://localhost:7004
+@token=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJuYW1laWQiOiIxIiwiZ2l2ZW5fbmFtZSI6IlNrYmlkaSIsImZhbWlseV9uYW1lIjoiTGltIiwiZW1haWwiOiJ0ZXN0QG55cC5lZHUuc2ciLCJQb3N0YWxDb2RlIjoiMTExMTExIiwibmJmIjoxNzM2ODczNzYzLCJleHAiOjE3Mzk0NjU3NjMsImlhdCI6MTczNjg3Mzc2M30.IdFwD-ilEMO4qAsUxty1MElQyDVCt6DJiqdwnI_EP8U
+// user
+POST {{LearningAPI_HostAddress}}/user/register
+Content-Type: application/json
+
+{
+  "FirstName": "Still",
+  "LastName": "Water",
+  "Email": "test@nyp.edu.sg",
+  "Password": "password@123",
+  "PostalCode": "111111"
+}
+### register
+
+POST {{LearningAPI_HostAddress}}/user/login
+Content-Type: application/json
+
+{
+ "email": "test@nyp.edu.sg",
+ "password": "password@123"
+}
+### login
+
+GET {{LearningAPI_HostAddress}}/user/auth
+Authorization: Bearer {{token}}
+
+### auth
+
+
+@userid=4
+GET {{LearningAPI_HostAddress}}/user/{{userid}}
+
+### get single user
+
+GET {{LearningAPI_HostAddress}}/user/all
+
+### get all user
+
+PUT {{LearningAPI_HostAddress}}/user/{{userid}}
+Content-Type: application/json
+
+{
+  "FirstName": "Leroy",
+  "LastName": "Jenkins",
+  "Email": "test@nyp.edu.sg",
+  "PostalCode": "111111"
+}
+
+### update single user
+
+PUT {{LearningAPI_HostAddress}}/user/activate/{{userid}}
+
+### activate user
+
+PUT {{LearningAPI_HostAddress}}/user/deactivate/{{userid}}
+
+### deactivate user
+
+
+
+
+
+@admintoken=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJuYW1laWQiOiIxIiwiZW1haWwiOiJhZG1pbkBleGFtcGxlLmNvbSIsIm5iZiI6MTczNjg2NDc0NCwiZXhwIjoxNzM5NDU2NzQ0LCJpYXQiOjE3MzY4NjQ3NDR9.IlLF203zFWf0UQ359nYArz4Pp1IVxggH52Kr_xrJTbE
+
+// admin
+POST {{LearningAPI_HostAddress}}/admin/register
+Content-Type: application/json
+
+{
+  "Email": "admin@example.com",
+  "Password": "password@123"
+}
+
+### register
+
+
+POST {{LearningAPI_HostAddress}}/admin/login
+Content-Type: application/json
+
+{
+  "Email": "admin@example.com",
+  "Password": "password@123"
+}
+
+### login
+
+
+GET {{LearningAPI_HostAddress}}/admin/all
+
+### get all admin
+
+@adminid=1
+
+GET {{LearningAPI_HostAddress}}/admin/{{adminid}}
+
+### get 1 admin
+
+PUT {{LearningAPI_HostAddress}}/admin/{{adminid}}
+Content-Type: application/json
+
+{
+  "Email": "greenthread@example.com",
+  "Password": "password@123"
+}
+
+### update
+
+GET {{LearningAPI_HostAddress}}/admin/auth
+Authorization: Bearer {{admintoken}}
+
+
+###
+
+PUT {{LearningAPI_HostAddress}}/admin/activate/{{adminid}}
+
+### activate admin
+
+PUT {{LearningAPI_HostAddress}}/admin/deactivate/{{adminid}}
+
+### deactivate admin
+
+
