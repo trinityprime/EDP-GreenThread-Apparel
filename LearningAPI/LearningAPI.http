@@ -1,5 +1,5 @@
 ﻿@LearningAPI_HostAddress = https://localhost:7004
-@token = eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJuYW1laWQiOiIxIiwiZ2l2ZW5fbmFtZSI6IlN0aWxsIiwiZmFtaWx5X25hbWUiOiJXYXRlciIsImVtYWlsIjoidGVzdEBueXAuZWR1LnNnIiwiUG9zdGFsQ29kZSI6IjExMTExMSIsInJvbGUiOiJVc2VyIiwibmJmIjoxNzM4NjU1ODkxLCJleHAiOjE3NDEyNDc4OTEsImlhdCI6MTczODY1NTg5MX0.RWSfty_eBrn7ofSi0Y3CtcIRsbn9Tv_Z8JvKSGgF_jU
+@token = eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJuYW1laWQiOiIxIiwiZ2l2ZW5fbmFtZSI6IlN0aWxsIiwiZmFtaWx5X25hbWUiOiJXYXRlciIsImVtYWlsIjoidGVzdEBueXAuZWR1LnNnIiwiUG9zdGFsQ29kZSI6IjExMTExMSIsInJvbGUiOiJVc2VyIiwibmJmIjoxNzM4NjgzNDIxLCJleHAiOjE3NDEyNzU0MjEsImlhdCI6MTczODY4MzQyMX0.OB-Ue-0NStyFkGMHlS778N-5S6GXSTCrkjkiY5FMiJc
 // user
 
 POST {{LearningAPI_HostAddress}}/user/register
@@ -142,7 +142,7 @@ Content-Type: application/json
 
 
 
-###
+### create this first
 
 POST {{LearningAPI_HostAddress}}/api/productcategory
 Content-Type: application/json
@@ -160,7 +160,7 @@ Content-Type: application/json
 {
   "userID": 1,
   "productID": 2,
-  "quantity": 2
+  "quantity": 20
 }
 
 ###

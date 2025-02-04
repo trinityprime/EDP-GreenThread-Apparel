@@ -86,6 +86,9 @@ namespace LearningAPI.Controllers
                 if (product == null)
                     return NotFound("Product not found");
 
+                _logger.LogInformation($"Product Category: {product.ProductCategory?.ProductCategoryName}");
+
+
                 return Ok(product);
             }
             catch (Exception ex)

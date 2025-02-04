@@ -60,39 +60,31 @@ namespace LearningAPI.Controllers
             if (shoppingCart == null)
                 return BadRequest("ShoppingCart data is required.");
 
-            // Check if User exists
             var userExists = await _context.Users.AnyAsync(u => u.UserID == shoppingCart.UserID);
             if (!userExists)
                 return BadRequest("Invalid UserID. User does not exist.");
 
-            // Check if Product exists
             var product = await _context.Products.FindAsync(shoppingCart.ProductID);
             if (product == null)
                 return BadRequest("Invalid ProductID. Product does not exist.");
 
-            // Check if the same product is already in the cart for the user
-            var existingCartItem = await _context.ShoppingCarts
-                .FirstOrDefaultAsync(c => c.UserID == shoppingCart.UserID && c.ProductID == shoppingCart.ProductID);
-
-            if (existingCartItem != null)
+            // Prevent ShoppingCartID from being set manually
+            var newShoppingCart = new ShoppingCart
             {
-                // Update quantity if product is already in the cart
-                existingCartItem.UpdateQuantity(existingCartItem.Quantity + shoppingCart.Quantity, product.Price);
-                existingCartItem.UpdatedAt = DateTime.UtcNow;
-            }
-            else
-            {
-                // Create new shopping cart item
-                shoppingCart.GrandTotal = shoppingCart.Quantity * product.Price;
-                shoppingCart.CreatedAt = DateTime.UtcNow;
-                shoppingCart.UpdatedAt = DateTime.UtcNow;
+                UserID = shoppingCart.UserID,
+                ProductID = shoppingCart.ProductID,
+                Quantity = shoppingCart.Quantity,
+                GrandTotal = shoppingCart.Quantity * product.Price,
+                CreatedAt = DateTime.UtcNow,
+                UpdatedAt = DateTime.UtcNow
+            };
 
-                _context.ShoppingCarts.Add(shoppingCart);
-            }
-
+            _context.ShoppingCarts.Add(newShoppingCart);
             await _context.SaveChangesAsync();
-            return CreatedAtAction(nameof(GetById), new { id = shoppingCart.ShoppingCartID }, shoppingCart);
+
+            return CreatedAtAction(nameof(GetById), new { id = newShoppingCart.ShoppingCartID }, newShoppingCart);
         }
+
 
         // 🔄 PUT Update Quantity in Shopping Cart
         [HttpPut("{id}")]

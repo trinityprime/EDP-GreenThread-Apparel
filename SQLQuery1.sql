@@ -1,0 +1,1 @@
+﻿DBCC CHECKIDENT ('ShoppingCarts', NORESEED);

@@ -60,6 +60,11 @@ namespace LearningAPI
                 .WithMany()
                 .HasForeignKey(o => o.PaymentID)
                 .OnDelete(DeleteBehavior.Cascade); // ✅ Orders will be deleted if Payment is deleted
+
+            modelBuilder.Entity<Product>()
+                .HasOne(p => p.ProductCategory)
+                .WithMany(c => c.Products)
+                .HasForeignKey(p => p.ProductCategoryID);
         }
 
 

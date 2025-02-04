@@ -48,7 +48,7 @@ namespace LearningAPI.Models
 
         // Foreign key property
         public int ProductCategoryID { get; set; }
-        public virtual ProductCategory? ProductCategory { get; set; }
+        public ProductCategory? ProductCategory { get; set; }
 
 
        

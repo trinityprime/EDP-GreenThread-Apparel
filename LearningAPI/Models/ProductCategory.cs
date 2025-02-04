@@ -17,6 +17,6 @@ namespace LearningAPI.Models
 
         // Navigation property to represent the one-to-many relationship
         [JsonIgnore]
-        public List<Product>? Products { get; set; }
+        public ICollection<Product>? Products { get; set; }
     }
 }
