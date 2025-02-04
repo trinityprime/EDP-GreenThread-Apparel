@@ -1,7 +1,5 @@
 ﻿using AutoMapper;
-using EDP_API.Models;
 using LearningAPI.Models;
-using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
@@ -11,228 +9,176 @@ using System.Security.Claims;
 namespace LearningAPI.Controllers
 {
     [ApiController]
-    [Route("[controller]")]
+    [Route("api/[controller]")]
     public class ProductController : ControllerBase
     {
-        private readonly MyDbContext context;
-        private readonly IMapper mapper;
-        private readonly ILogger<ProductController> logger;
+        private readonly MyDbContext _context;
+        private readonly IMapper _mapper;
+        private readonly ILogger<ProductController> _logger;
 
         public ProductController(MyDbContext context, IMapper mapper, ILogger<ProductController> logger)
         {
-            this.context = context;
-            this.mapper = mapper;
-            this.logger = logger;
+            _context = context;
+            _mapper = mapper;
+            _logger = logger;
         }
 
-        // Method to handle file upload
-        private string UploadImageFile(IFormFile file)
+        // 🖼️ Handle Multiple Image Uploads
+        private List<string> UploadImageFiles(List<IFormFile> files)
         {
-            if (file == null || file.Length == 0)
-                return null;
+            var uploadedPaths = new List<string>();
+            if (files == null || files.Count == 0) return uploadedPaths;
 
-            try
+            var uploadsFolder = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot", "uploads", "images");
+
+            if (!Directory.Exists(uploadsFolder))
+                Directory.CreateDirectory(uploadsFolder);
+
+            foreach (var file in files)
             {
-                var uploadsFolder = Path.Combine(Directory.GetCurrentDirectory(), "uploads", "images");
-
-                // Ensure folder exists
-                if (!Directory.Exists(uploadsFolder))
+                if (file.Length > 0)
                 {
-                    Directory.CreateDirectory(uploadsFolder);
+                    var fileName = Guid.NewGuid().ToString() + Path.GetExtension(file.FileName);
+                    var filePath = Path.Combine(uploadsFolder, fileName);
+
+                    using (var stream = new FileStream(filePath, FileMode.Create))
+                    {
+                        file.CopyTo(stream);
+                    }
+
+                    uploadedPaths.Add($"/uploads/images/{fileName}");
                 }
-
-                // Create a unique file name to avoid conflicts
-                var fileName = Path.GetRandomFileName() + Path.GetExtension(file.FileName);
-                var filePath = Path.Combine(uploadsFolder, fileName);
-
-                // Save the file to the server
-                using (var stream = new FileStream(filePath, FileMode.Create))
-                {
-                    file.CopyTo(stream);
-                }
-
-                // Return the relative path to the file
-                return Path.Combine("uploads", "images", fileName);
             }
-            catch (Exception ex)
-            {
-                logger.LogError(ex, "Error uploading file");
-                return null;
-            }
+            return uploadedPaths;
         }
 
+        // 📋 GET All Products with Optional Search
         [HttpGet]
-        [ProducesResponseType(typeof(IEnumerable<ProductDTO>), StatusCodes.Status200OK)]
         public async Task<IActionResult> GetAll(string? search)
         {
             try
             {
-                IQueryable<Product> result = context.Products;
-                if (search != null)
-                {
-                    result = result.Where(x => x.ProductName.Contains(search));
-                }
-                var list = await result.OrderByDescending(x => x.CreatedAt).ToListAsync();
-                IEnumerable<ProductDTO> data = list.Select(mapper.Map<ProductDTO>);
-                return Ok(data);
+                IQueryable<Product> query = _context.Products.Include(p => p.ProductCategory);
+
+                if (!string.IsNullOrEmpty(search))
+                    query = query.Where(p => p.ProductName.Contains(search) || p.ProductDescription.Contains(search));
+
+                var products = await query.OrderByDescending(p => p.CreatedAt).ToListAsync();
+                return Ok(products);
             }
             catch (Exception ex)
             {
-                logger.LogError(ex, "Error when getting all products");
-                return StatusCode(500);
+                _logger.LogError(ex, "Error fetching products");
+                return StatusCode(500, "Internal Server Error");
             }
         }
 
+        // 📌 GET Product by ID
         [HttpGet("{id}")]
-        [ProducesResponseType(typeof(ProductDTO), StatusCodes.Status200OK)]
         public async Task<IActionResult> GetProduct(int id)
         {
             try
             {
-                var product = context.Products
-                              .Include(p => p.ProductCategory)
-                              .FirstOrDefault(p => p.Id == id);
+                var product = await _context.Products
+                    .Include(p => p.ProductCategory)
+                    .FirstOrDefaultAsync(p => p.ProductID == id);
+
                 if (product == null)
-                {
-                    return NotFound();
-                }
-                ProductDTO data = mapper.Map<ProductDTO>(product);
-                return Ok(data);
+                    return NotFound("Product not found");
+
+                return Ok(product);
             }
             catch (Exception ex)
             {
-                logger.LogError(ex, "Error when getting product by id");
-                return StatusCode(500);
+                _logger.LogError(ex, "Error fetching product");
+                return StatusCode(500, "Internal Server Error");
             }
         }
 
+        // ➕ POST Add New Product
         [HttpPost]
-        [ProducesResponseType(StatusCodes.Status200OK)]
-        [ProducesResponseType(StatusCodes.Status400BadRequest)]
-        public async Task<IActionResult> AddProduct([FromForm] ProductDTO product, [FromForm] IFormFile imageFile)
-        {
-            if (imageFile == null || imageFile.Length == 0)
-            {
-                return BadRequest(new { message = "No file uploaded." });
-            }
-
-            // Validate file type (optional)
-            var allowedExtensions = new[] { ".jpg", ".jpeg", ".png", ".gif" };
-            var fileExtension = Path.GetExtension(imageFile.FileName).ToLower();
-            if (!allowedExtensions.Contains(fileExtension))
-            {
-                return BadRequest(new { message = "Invalid file type. Only image files are allowed." });
-            }
-
-            // Create directory for images if it doesn't exist
-            var imageFolderPath = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot", "uploads", "images");
-            if (!Directory.Exists(imageFolderPath))
-            {
-                Directory.CreateDirectory(imageFolderPath);
-            }
-
-            // Generate unique file name
-            var fileName = Guid.NewGuid().ToString() + fileExtension;
-            var filePath = Path.Combine(imageFolderPath, fileName);
-
-            // Save the image file to the server
-            using (var stream = new FileStream(filePath, FileMode.Create))
-            {
-                await imageFile.CopyToAsync(stream);
-            }
-
-            // Save the product in the database
-            var newProduct = new Product
-            {
-                ProductName = product.ProductName,
-                ProductDescription = product.ProductDescription,
-                Price = product.Price,
-                Stock = product.Stock,
-                Size = product.Size,
-                ProductCategoryID = product.ProductCategoryID,
-                ImageFile = $"/uploads/images/{fileName}" // Store the relative file path in the database
-            };
-
-            context.Products.Add(newProduct);
-            await context.SaveChangesAsync();
-
-            return Ok(new { message = "Product added successfully!" });
-        }
-
-
-        // UpdateProduct with file upload handling (optional)
-        [HttpPut("{id}")]
-        [Consumes("multipart/form-data")]  // Explicitly specify multipart form data
-        public async Task<IActionResult> UpdateProduct(int id, [FromForm] UpdateProduct product, [FromForm] IFormFile imageFile)
+        public async Task<IActionResult> AddProduct([FromForm] Product product, [FromForm] List<IFormFile> imageFiles)
         {
             try
             {
-                var myProduct = await context.Products.FindAsync(id);
-                if (myProduct == null)
-                {
-                    return NotFound();
-                }
+                if (product == null)
+                    return BadRequest("Invalid product data");
 
-                if (product.ProductName != null)
-                {
-                    myProduct.ProductName = product.ProductName.Trim();
-                }
-                if (product.ProductDescription != null)
-                {
-                    myProduct.ProductDescription = product.ProductDescription.Trim();
-                }
-                if (product.Price > 0)
-                {
-                    myProduct.Price = product.Price;
-                }
-                if (product.Stock > 0)
-                {
-                    myProduct.Stock = product.Stock;
-                }
-                if (product.Size != null)
-                {
-                    myProduct.Size = product.Size;
-                }
-                if (imageFile != null)
-                {
-                    // If an image file is provided, update the image path
-                    myProduct.ImageFile = UploadImageFile(imageFile);
-                }
-                if (product.ProductCategoryID != null)
-                {
-                    myProduct.ProductCategoryID = product.ProductCategoryID;
-                }
-                myProduct.UpdatedAt = DateTime.Now;
+                product.ImageFiles = UploadImageFiles(imageFiles);
+                product.CreatedAt = DateTime.UtcNow;
+                product.UpdatedAt = DateTime.UtcNow;
 
-                await context.SaveChangesAsync();
-                return NoContent(); // 204 No Content
+                _context.Products.Add(product);
+                await _context.SaveChangesAsync();
+                return CreatedAtAction(nameof(GetProduct), new { id = product.ProductID }, product);
             }
             catch (Exception ex)
             {
-                logger.LogError(ex, "Error when updating product");
-                return StatusCode(500);
+                _logger.LogError(ex, "Error adding product");
+                return StatusCode(500, "Internal Server Error");
             }
         }
 
+        // 📝 PUT Update Product (Supports Partial Updates)
+        [HttpPut("{id}")]
+        public async Task<IActionResult> UpdateProduct(int id, [FromForm] Product product, [FromForm] List<IFormFile>? imageFiles)
+        {
+            try
+            {
+                var existingProduct = await _context.Products.FindAsync(id);
+                if (existingProduct == null)
+                    return NotFound("Product not found");
+
+                if (!string.IsNullOrEmpty(product.ProductName))
+                    existingProduct.ProductName = product.ProductName.Trim();
+                if (!string.IsNullOrEmpty(product.ProductDescription))
+                    existingProduct.ProductDescription = product.ProductDescription.Trim();
+                if (product.Price > 0)
+                    existingProduct.Price = product.Price;
+                if (product.Stock >= 0)
+                    existingProduct.Stock = product.Stock;
+                if (product.Size != null)
+                    existingProduct.Size = product.Size;
+                if (product.Status != null)
+                    existingProduct.Status = product.Status;
+                if (product.DiscountPercentage >= 0)
+                    existingProduct.DiscountPercentage = product.DiscountPercentage;
+                if (product.ProductCategoryID > 0)
+                    existingProduct.ProductCategoryID = product.ProductCategoryID;
+
+                // Update image files if new ones are uploaded
+                if (imageFiles != null && imageFiles.Count > 0)
+                    existingProduct.ImageFiles = UploadImageFiles(imageFiles);
+
+                existingProduct.UpdatedAt = DateTime.UtcNow;
+                await _context.SaveChangesAsync();
+                return NoContent();
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error updating product");
+                return StatusCode(500, "Internal Server Error");
+            }
+        }
+
+        // 🗑️ DELETE Product
         [HttpDelete("{id}")]
         public async Task<IActionResult> DeleteProduct(int id)
         {
             try
             {
-                var myProduct = await context.Products.FindAsync(id);
-                if (myProduct == null)
-                {
-                    return NotFound();
-                }
+                var product = await _context.Products.FindAsync(id);
+                if (product == null)
+                    return NotFound("Product not found");
 
-                context.Products.Remove(myProduct);
-                await context.SaveChangesAsync();
-                return NoContent(); // 204 No Content
+                _context.Products.Remove(product);
+                await _context.SaveChangesAsync();
+                return NoContent();
             }
             catch (Exception ex)
             {
-                logger.LogError(ex, "Error when deleting product");
-                return StatusCode(500);
+                _logger.LogError(ex, "Error deleting product");
+                return StatusCode(500, "Internal Server Error");
             }
         }
     }

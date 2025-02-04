@@ -1,13 +1,16 @@
 ﻿using Microsoft.AspNetCore.Mvc;
-using EDP_API.Models;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.EntityFrameworkCore;
-using System.Diagnostics.CodeAnalysis;
+using System.Linq;
+using System.Threading.Tasks;
+using System.Collections.Generic;
+using LearningAPI.Models;
+using LearningAPI;
 
-namespace EDP_API.Controllers
+namespace LearningAPI.Controllers
 {
     [ApiController]
-    [Route("[controller]")]
+    [Route("api/[controller]")]
     public class OrderController : ControllerBase
     {
         private readonly MyDbContext _context;
@@ -17,20 +20,18 @@ namespace EDP_API.Controllers
             _context = context;
         }
 
-        // Get all orders
-        [HttpGet]
-        public IActionResult GetAll()
+        // 📋 Get All Orders
+        [HttpGet, Authorize]
+        public async Task<IActionResult> GetAllOrders()
         {
-            var orders = _context.Orders
+            var orders = await _context.Orders
                 .Include(o => o.User) // Include user details
-                .Include(o => o.ShoppingCart)
-                    .ThenInclude(c => c.CartItems) // Ensure CartItems are included
-                        .ThenInclude(ci => ci.Product) // Include products for each cart item
-                .Include(o => o.OrderSummaryItems) // Ensure OrderSummaryItems are included
-                    .ThenInclude(osi => osi.Product) // Include product details in OrderSummaryItems
-                .ToList(); // Fetch all orders as a list
+                .Include(o => o.Payment) // Include Payment details
+                .Include(o => o.OrderSummaryItems) // Include OrderSummaryItems
+                    .ThenInclude(osi => osi.Product) // Include product details for OrderSummaryItems
+                .ToListAsync();
 
-            if (orders == null || !orders.Any())
+            if (!orders.Any())
                 return NotFound("No orders found.");
 
             var data = orders.Select(o => new
@@ -46,50 +47,41 @@ namespace EDP_API.Controllers
                     o.User.FirstName,
                     o.User.LastName
                 },
-                ShoppingCart = o.ShoppingCart == null ? null : new
+                Payment = o.Payment == null ? null : new
                 {
-                    CartItems = o.ShoppingCart.CartItems?.Select(ci => new
-                    {
-                        ci.CartItemID,
-                        ci.ProductID,
-                        Product = ci.Product == null ? null : new
-                        {
-                            ci.Product.ProductID,
-                            ci.Product.ProductName,
-                            ci.Product.Price
-                        },
-                        ci.Quantity
-                    })
+                    PaymentID = o.Payment.PaymentID, 
+                    PaymentMethod = o.Payment.PaymentMethod,
+                    AmountPaid = o.Payment.AmountPaid,
+                    PaymentStatus = o.Payment.PaymentStatus.ToString()
                 },
                 OrderSummaryItems = o.OrderSummaryItems?.Select(osi => new
                 {
                     osi.OrderSummaryItemID,
-                    osi.Subtotal,
                     Product = osi.Product == null ? null : new
                     {
                         osi.Product.ProductID,
                         osi.Product.ProductName,
                         osi.Product.Price
-                    }
+                    },
+                    osi.Quantity,
+                    osi.PriceAtPurchase
                 }),
-                TotalAmount = o.OrderSummaryItems?.Sum(osi => osi.Subtotal) ?? 0
+                GrandTotal = o.GrandTotal
             });
 
             return Ok(data);
         }
 
-        // Get individual order
-        [HttpGet("{id}")]
-        public IActionResult GetOrder(int id)
+        // 📌 Get Order by ID
+        [HttpGet("{id}"), Authorize]
+        public async Task<IActionResult> GetOrderById(int id)
         {
-            var order = _context.Orders
-                .Include(o => o.User) // Include user details
-                .Include(o => o.ShoppingCart)
-                    .ThenInclude(c => c.CartItems) // Include CartItems for ShoppingCart
-                        .ThenInclude(ci => ci.Product) // Include product details for CartItem
-                .Include(o => o.OrderSummaryItems) // Include OrderSummaryItems
-                    .ThenInclude(osi => osi.Product) // Include product for OrderSummaryItems
-                .FirstOrDefault(o => o.OrderID == id); // Fetch order by ID
+            var order = await _context.Orders
+                .Include(o => o.User)
+                .Include(o => o.Payment)
+                .Include(o => o.OrderSummaryItems)
+                    .ThenInclude(osi => osi.Product)
+                .FirstOrDefaultAsync(o => o.OrderID == id);
 
             if (order == null)
                 return NotFound($"Order with ID {id} not found.");
@@ -107,110 +99,55 @@ namespace EDP_API.Controllers
                     order.User.FirstName,
                     order.User.LastName
                 },
-                ShoppingCart = order.ShoppingCart == null ? null : new
+                Payment = order.Payment == null ? null : new
                 {
-                    CartItems = order.ShoppingCart.CartItems?.Select(ci => new
-                    {
-                        ci.CartItemID,
-                        ci.ProductID,
-                        Product = ci.Product == null ? null : new
-                        {
-                            ci.Product.ProductID,
-                            ci.Product.ProductName,
-                            ci.Product.Price
-                        },
-                        ci.Quantity
-                    })
+                    order.Payment.PaymentID,
+                    order.Payment.PaymentMethod,
+                    order.Payment.AmountPaid,
+                    PaymentStatus = order.Payment.PaymentStatus.ToString()
                 },
                 OrderSummaryItems = order.OrderSummaryItems?.Select(osi => new
                 {
                     osi.OrderSummaryItemID,
-                    osi.Subtotal,
                     Product = osi.Product == null ? null : new
                     {
                         osi.Product.ProductID,
                         osi.Product.ProductName,
                         osi.Product.Price
-                    }
+                    },
+                    osi.Quantity,
+                    osi.PriceAtPurchase
                 }),
-                TotalAmount = order.OrderSummaryItems?.Sum(osi => osi.Subtotal) ?? 0
+                GrandTotal = order.GrandTotal
             };
 
             return Ok(data);
         }
 
-        // Create a new order
-        [HttpPost, Authorize]
-        public IActionResult CreateOrder([FromBody] Order order)
-        {
-            try
-            {
-                int userId = GetUserId();
-                var now = DateTime.Now;
-
-                var shoppingCart = _context.ShoppingCarts.Find(order.ShoppingCartID);
-                if (shoppingCart == null)
-                {
-                    return BadRequest("Shopping cart does not exist.");
-                }
-
-                var newOrder = new Order
-                {
-                    OrderDate = now,
-                    OrderStatus = order.OrderStatus,
-                    CreatedAt = now,
-                    UpdatedAt = now,
-                    UserID = userId,
-                    ShoppingCartID = order.ShoppingCartID // Use the ShoppingCartID from the incoming order
-                };
-
-                _context.Orders.Add(newOrder);
-                _context.SaveChanges();
-                return CreatedAtAction(nameof(GetOrder), new { id = newOrder.OrderID }, newOrder);
-            }
-            catch (Exception)
-            {
-                return StatusCode(500, "An error occurred while creating the order.");
-            }
-        }
-
-        // Update an order
+        // 🔄 Update Order Status
         [HttpPut("{id}"), Authorize]
-        public IActionResult UpdateOrder(int id, Order order)
+        public async Task<IActionResult> UpdateOrderStatus(int id, [FromBody] Order orderRequest)
         {
-            var existingOrder = _context.Orders.Find(id);
-            if (existingOrder == null) return NotFound();
-
-            int userId = GetUserId();
-            if (existingOrder.UserID != userId) return Forbid();
-
-            existingOrder.OrderStatus = order.OrderStatus;
-            existingOrder.UpdatedAt = DateTime.Now;
-
-            _context.SaveChanges();
-            return Ok();
-        }
-
-        // Delete an order
-        [HttpDelete("{id}"), Authorize]
-        public IActionResult DeleteOrder(int id)
-        {
-            var order = _context.Orders.Find(id);
+            var order = await _context.Orders.FindAsync(id);
             if (order == null) return NotFound();
 
-            int userId = GetUserId();
-            if (order.UserID != userId) return Forbid();
+            order.OrderStatus = orderRequest.OrderStatus;
+            order.UpdatedAt = DateTime.UtcNow;
 
-            _context.Orders.Remove(order);
-            _context.SaveChanges();
-            return Ok();
+            await _context.SaveChangesAsync();
+            return Ok(new { message = $"Order ID {id} status updated to {order.OrderStatus}." });
         }
 
-        // Helper method to get the current user's ID from claims
-        private int GetUserId()
+        // 🗑️ Delete an Order
+        [HttpDelete("{id}"), Authorize]
+        public async Task<IActionResult> DeleteOrder(int id)
         {
-            return Convert.ToInt32(User.Claims
-                .FirstOrDefault(c => c.Type == System.Security.Claims.ClaimTypes.NameIdentifier)?.Value);
+            var order = await _context.Orders.FindAsync(id);
+            if (order == null) return NotFound();
+
+            _context.Orders.Remove(order);
+            await _context.SaveChangesAsync();
+            return NoContent();
         }
     }
 }

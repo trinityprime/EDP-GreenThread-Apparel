@@ -1,53 +1,50 @@
-﻿using EDP_API.Models;
-using LearningAPI.Models;
+﻿using LearningAPI.Models;
 using System.ComponentModel.DataAnnotations;
+using System.ComponentModel.DataAnnotations.Schema;
 using System.Text.Json.Serialization;
 
-namespace EDP_API.Models
+namespace LearningAPI.Models
 {
     public class Order
     {
+        [Key]
         public int OrderID { get; set; } // Primary Key
 
         [Required]
+        [ForeignKey("User")]
         public int UserID { get; set; } // Foreign Key to User
-
-        [JsonIgnore] // Prevent serializing the User property
         public virtual User? User { get; set; } // Navigation to User model
 
         [Required]
-        public int ShoppingCartID { get; set; } 
-
-        [JsonIgnore] // Prevent serializing the shopping cart property
-        public virtual ShoppingCart? ShoppingCart { get; set; }
-
-        [Required]
-        public DateTime OrderDate { get; set; }
+        [ForeignKey("Payment")]
+        public int PaymentID { get; set; } // Foreign Key to Payment
+        public virtual Payment? Payment { get; set; } // Navigation to Payment model
 
         [Required]
-        [JsonConverter(typeof(JsonStringEnumConverter))] // Converts enum to string during serialization/deserialization
-        public Order_Status OrderStatus { get; set; }
+        public DateTime OrderDate { get; set; } = DateTime.UtcNow;
 
-        public enum Order_Status
-        {
-            Pending,   // "Pending"
-            Completed, // "Completed"
-            Cancelled  // "Cancelled"
-        }
+        [Required]
+        [JsonConverter(typeof(JsonStringEnumConverter))]
+        public OrderStatus OrderStatus { get; set; } = OrderStatus.Pending; // Default: Pending
 
-        public DateTime CreatedAt { get; set; }
-        public DateTime UpdatedAt { get; set; }
+        [Required]
+        [Column(TypeName = "decimal(10,2)")]
+        public decimal GrandTotal { get; set; } // Order total amount
 
-        // Nullable one-to-many relationship
-        [JsonIgnore]
-        public List<OrderSummaryItem>? OrderSummaryItems { get; set; }
+        public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
+        public DateTime UpdatedAt { get; set; } = DateTime.UtcNow;
 
-        // Nullable Payment Navigation Property
-        [JsonIgnore]
-        public virtual Payment? Payments { get; set; }
+        // Order items (from Shopping Cart)
+        public virtual List<OrderSummaryItem>? OrderSummaryItems { get; set; }
 
-        // Nullable Refund Navigation Property
-        [JsonIgnore]
-        public virtual Refund? Refunds { get; set; }
+        //// Refunds (if applicable)
+        //public virtual List<Refund>? Refunds { get; set; }
+    }
+
+    public enum OrderStatus
+    {
+        Pending,   // "Pending" (Before Payment)
+        Completed, // "Completed" (After Payment)
+        Cancelled  // "Cancelled"
     }
 }
