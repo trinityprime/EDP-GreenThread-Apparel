@@ -95,21 +95,33 @@ namespace LearningAPI.Controllers
             }
         }
 
-        // ➕ POST Add New Product
         [HttpPost]
-        public async Task<IActionResult> AddProduct([FromForm] Product product, [FromForm] List<IFormFile> imageFiles)
+        public async Task<IActionResult> AddProduct([FromBody] Product product)
         {
             try
             {
                 if (product == null)
-                    return BadRequest("Invalid product data");
+                    return BadRequest(new { message = "Invalid request. Check JSON structure." });
 
-                product.ImageFiles = UploadImageFiles(imageFiles);
+                // Validate size
+                if (!Enum.IsDefined(typeof(ProductSize), product.Size))
+                    return BadRequest(new { message = $"Invalid size value. Allowed values: {string.Join(", ", Enum.GetNames(typeof(ProductSize)))}" });
+
+                // Validate ProductCategoryID
+                var categoryExists = await _context.ProductCategory.AnyAsync(c => c.ProductCategoryID == product.ProductCategoryID);
+                if (!categoryExists)
+                {
+                    return BadRequest(new { message = $"Invalid ProductCategoryID: {product.ProductCategoryID}. Category does not exist." });
+                }
+
+                // Set timestamps
                 product.CreatedAt = DateTime.UtcNow;
                 product.UpdatedAt = DateTime.UtcNow;
 
+                // Add to database
                 _context.Products.Add(product);
                 await _context.SaveChangesAsync();
+
                 return CreatedAtAction(nameof(GetProduct), new { id = product.ProductID }, product);
             }
             catch (Exception ex)

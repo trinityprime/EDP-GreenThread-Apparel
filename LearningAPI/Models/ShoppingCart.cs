@@ -7,6 +7,7 @@ namespace LearningAPI.Models
     public class ShoppingCart
     {
         [Key]
+        [DatabaseGenerated(DatabaseGeneratedOption.Identity)]
         public int ShoppingCartID { get; set; }
 
         // Foreign Key for User

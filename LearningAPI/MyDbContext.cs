@@ -29,6 +29,8 @@ namespace LearningAPI
         public DbSet<Admin> Admins { get; set; }
 
         public DbSet<Product> Products { get; set; }
+        public DbSet<ProductCategory> ProductCategory { get; set; }
+
         public DbSet<ShoppingCart> ShoppingCarts { get; set; }
         public DbSet<Payment> Payments { get; set; }
 
