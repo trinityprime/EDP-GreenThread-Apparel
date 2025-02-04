@@ -1,100 +1,84 @@
-﻿using AutoMapper;
-using LearningAPI.Models;
-using Microsoft.AspNetCore.Authorization;
+﻿using LearningAPI.Models;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.IdentityModel.Tokens;
-using System.IdentityModel.Tokens.Jwt;
-using System.Security.Claims;
-using System.Text;
 
 namespace LearningAPI.Controllers
 {
     [ApiController]
-    [Route("[controller]")]
-    public class ProductCategoryController(MyDbContext context, IConfiguration configuration, IMapper mapper,
-        ILogger<ProductCategoryController> logger) : ControllerBase
+    [Route("api/[controller]")]
+    public class ProductCategoryController : ControllerBase
     {
-        [HttpPost]
-        public async Task<IActionResult> AddProductCategory(AddProductCategory productCategory)
+        private readonly MyDbContext _context;
+        private readonly ILogger<ProductCategoryController> _logger;
+
+        public ProductCategoryController(MyDbContext context, ILogger<ProductCategoryController> logger)
         {
-            try
-            {
-                // Trim string values
-                productCategory.ProductCategoryName = productCategory.ProductCategoryName.Trim();
-
-                // Check
-                var foundCategory = await context.ProductCategories.Where(x => x.ProductCategoryName == productCategory.ProductCategoryName).FirstOrDefaultAsync();
-                if (foundCategory != null)
-                {
-                    string message = "Category already exists.";
-                    return BadRequest(new { message });
-                }
-
-                // Create user object
-                var now = DateTime.Now;
-                var category = new ProductCategory()
-                {
-                    ProductCategoryName = productCategory.ProductCategoryName,
-                    CreatedAt = now
-                };
-
-                // Add user
-                await context.ProductCategories.AddAsync(category);
-                await context.SaveChangesAsync();
-                return Ok();
-            }
-            catch (Exception ex)
-            {
-                logger.LogError(ex, "Error adding category");
-                return StatusCode(500);
-            }
+            _context = context;
+            _logger = logger;
         }
 
+        // 📋 GET All Categories
         [HttpGet]
-        [ProducesResponseType(typeof(IEnumerable<ProductCategoryDTO>), StatusCodes.Status200OK)]
-        public async Task<IActionResult> GetAll(string? search)
+        public async Task<IActionResult> GetAllCategories()
         {
-            try
-            {
-                IQueryable<ProductCategory> result = context.ProductCategories;
-                if (search != null)
-                {
-                    result = result.Where(x => x.ProductCategoryName.Contains(search));
-                }
-                var list = await result.OrderByDescending(x => x.CreatedAt).ToListAsync();
-                IEnumerable<ProductCategoryDTO> data = list.Select(mapper.Map<ProductCategoryDTO>);
-                return Ok(data);
-            }
-            catch (Exception ex)
-            {
-                logger.LogError(ex, "Error when get all category");
-                return StatusCode(500);
-            }
+            var categories = await _context.ProductCategory.ToListAsync();
+            return Ok(categories);
         }
 
+        // 📌 GET Category by ID
+        [HttpGet("{id}")]
+        public async Task<IActionResult> GetCategory(int id)
+        {
+            var category = await _context.ProductCategory.FindAsync(id);
+            if (category == null)
+                return NotFound($"Category with ID {id} not found.");
+
+            return Ok(category);
+        }
+
+        // ➕ POST Add New Category
+        [HttpPost]
+        public async Task<IActionResult> AddCategory([FromBody] ProductCategory category)
+        {
+            if (string.IsNullOrWhiteSpace(category.ProductCategoryName))
+                return BadRequest(new { message = "Category name is required." });
+
+            category.CreatedAt = DateTime.UtcNow;
+
+            _context.ProductCategory.Add(category);
+            await _context.SaveChangesAsync();
+
+            return CreatedAtAction(nameof(GetCategory), new { id = category.ProductCategoryID }, category);
+        }
+
+        // 📝 PUT Update Category
+        [HttpPut("{id}")]
+        public async Task<IActionResult> UpdateCategory(int id, [FromBody] ProductCategory category)
+        {
+            var existingCategory = await _context.ProductCategory.FindAsync(id);
+            if (existingCategory == null)
+                return NotFound($"Category with ID {id} not found.");
+
+            if (!string.IsNullOrWhiteSpace(category.ProductCategoryName))
+                existingCategory.ProductCategoryName = category.ProductCategoryName.Trim();
+
+            existingCategory.CreatedAt = DateTime.UtcNow;
+
+            await _context.SaveChangesAsync();
+            return Ok(existingCategory);
+        }
+
+        // 🗑️ DELETE Category
         [HttpDelete("{id}")]
         public async Task<IActionResult> DeleteCategory(int id)
         {
-            try
-            {
-                var myCategory = context.ProductCategories.Find(id);
-                if (myCategory == null)
-                {
-                    return NotFound();
-                }
+            var category = await _context.ProductCategory.FindAsync(id);
+            if (category == null)
+                return NotFound($"Category with ID {id} not found.");
 
-                context.ProductCategories.Remove(myCategory);
-                await context.SaveChangesAsync();
-                return Ok();
-            }
-            catch (Exception ex)
-            {
-                logger.LogError(ex, "Error when delete category");
-                return StatusCode(500);
-            }
+            _context.ProductCategory.Remove(category);
+            await _context.SaveChangesAsync();
+            return NoContent();
         }
-
-
     }
 }

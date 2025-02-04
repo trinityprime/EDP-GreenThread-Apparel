@@ -1,6 +1,4 @@
-﻿using EDP_API.Models;
-using System;
-using System.Collections.Generic;
+﻿using System;
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 
@@ -8,38 +6,50 @@ namespace LearningAPI.Models
 {
     public class ShoppingCart
     {
-        [Key] // Primary Key
+        [Key]
+        [DatabaseGenerated(DatabaseGeneratedOption.Identity)]
         public int ShoppingCartID { get; set; }
 
         // Foreign Key for User
-        [Required] // UserID is required
+        [Required]
         public int UserID { get; set; }
         [ForeignKey("UserID")]
         public virtual User? User { get; set; }
 
+        // Foreign Key for Product
+        [Required]
+        public int ProductID { get; set; }
+        [ForeignKey("ProductID")]
+        public virtual Product? Product { get; set; }
 
-        [Required] // cartitem is required
-        public int CartItemID { get; set; }
-        [ForeignKey("CartItemID")]
-        public virtual CartItem? CartItem { get; set; }
+        // Quantity of product
+        [Required]
+        [Range(1, int.MaxValue, ErrorMessage = "Quantity must be at least 1.")]
+        public int Quantity { get; set; }
 
-        [Required] // GrandTotal is required
+        // Grand total calculation (optional, can be calculated dynamically)
+        [Required]
         [Range(0, double.MaxValue, ErrorMessage = "GrandTotal must be a positive value.")]
         public decimal GrandTotal { get; set; }
 
-        [Range(0, double.MaxValue, ErrorMessage = "Discount must be a positive value.")]
-        public decimal Discount { get; set; }
-
-        [Required] // CreatedAt is required
+        // Created and Updated timestamps
+        [Required]
         [Column(TypeName = "datetime")]
         public DateTime CreatedAt { get; set; }
 
-        [Required] // UpdatedAt is required
+        [Required]
         [Column(TypeName = "datetime")]
         public DateTime UpdatedAt { get; set; }
 
-        // One-to-many relationship with CartItems
-        public List<CartItem>? CartItems { get; set; }
+        // Method to update quantity
+        public void UpdateQuantity(int newQuantity, decimal Price)
+        {
+            if (newQuantity < 1)
+                throw new ArgumentException("Quantity must be at least 1.");
 
+            Quantity = newQuantity;
+            GrandTotal = newQuantity * Price;
+            UpdatedAt = DateTime.UtcNow;
+        }
     }
 }

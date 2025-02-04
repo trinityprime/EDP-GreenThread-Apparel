@@ -2,7 +2,7 @@
 using System.ComponentModel.DataAnnotations.Schema;
 using System.Text.Json.Serialization; 
 
-namespace EDP_API.Models
+namespace LearningAPI.Models
 {
     public class Delivery
     {
