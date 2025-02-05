@@ -36,7 +36,7 @@ namespace LearningAPI
 
 
         public DbSet<Order> Orders { get; set; }
-        //public DbSet<Delivery> Deliveries { get; set; }
+        public DbSet<Delivery> Deliveries { get; set; }
 
 
 

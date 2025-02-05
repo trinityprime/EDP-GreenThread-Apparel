@@ -1,5 +1,5 @@
 ﻿@LearningAPI_HostAddress = https://localhost:7004
-@token = eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJuYW1laWQiOiIxIiwiZ2l2ZW5fbmFtZSI6IlN0aWxsIiwiZmFtaWx5X25hbWUiOiJXYXRlciIsImVtYWlsIjoidGVzdEBueXAuZWR1LnNnIiwiUG9zdGFsQ29kZSI6IjExMTExMSIsInJvbGUiOiJVc2VyIiwibmJmIjoxNzM4NzMxMzc0LCJleHAiOjE3NDEzMjMzNzQsImlhdCI6MTczODczMTM3NH0.V4IcXmgAsj_jIRGCtj4u1lAxFq4bYcyTfINe9Q6MU6w
+@token = eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJuYW1laWQiOiIxIiwiZ2l2ZW5fbmFtZSI6IlN0aWxsIiwiZmFtaWx5X25hbWUiOiJXYXRlciIsImVtYWlsIjoidGVzdEBueXAuZWR1LnNnIiwiUG9zdGFsQ29kZSI6IjExMTExMSIsInJvbGUiOiJVc2VyIiwibmJmIjoxNzM4NzMyMTgyLCJleHAiOjE3NDEzMjQxODIsImlhdCI6MTczODczMjE4Mn0.yi4FT06aqxu49O-DLnEIyfMZBry_eI60rzFRK0Tqkr4
 // userW5go
 
 POST {{LearningAPI_HostAddress}}/user/register
@@ -228,5 +228,22 @@ Authorization: Bearer {{token}}
 ###
 
 GET {{LearningAPI_HostAddress}}/api/order
+
+###
+
+POST {{LearningAPI_HostAddress}}/api/delivery
+Content-Type: application/json
+
+{
+  "orderID": 1,
+  "address": "123 Green Street, New York, NY 10001",
+  "deliveryStatus": "Pending"
+}
+
+###
+
+
+
+GET {{LearningAPI_HostAddress}}/api/delivery
 
 ###

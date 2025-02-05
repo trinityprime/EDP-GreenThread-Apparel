@@ -58,6 +58,38 @@ namespace LearningAPI.Migrations
                     b.ToTable("Admins");
                 });
 
+            modelBuilder.Entity("LearningAPI.Models.Delivery", b =>
+                {
+                    b.Property<int>("DeliveryID")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("DeliveryID"));
+
+                    b.Property<string>("Address")
+                        .IsRequired()
+                        .HasMaxLength(255)
+                        .HasColumnType("nvarchar(255)");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime");
+
+                    b.Property<int>("DeliveryStatus")
+                        .HasColumnType("int");
+
+                    b.Property<int>("OrderID")
+                        .HasColumnType("int");
+
+                    b.Property<DateTime>("UpdatedAt")
+                        .HasColumnType("datetime");
+
+                    b.HasKey("DeliveryID");
+
+                    b.HasIndex("OrderID");
+
+                    b.ToTable("Deliveries");
+                });
+
             modelBuilder.Entity("LearningAPI.Models.Order", b =>
                 {
                     b.Property<int>("OrderID")
@@ -341,6 +373,17 @@ namespace LearningAPI.Migrations
                     b.HasKey("UserID");
 
                     b.ToTable("Users");
+                });
+
+            modelBuilder.Entity("LearningAPI.Models.Delivery", b =>
+                {
+                    b.HasOne("LearningAPI.Models.Order", "Order")
+                        .WithMany()
+                        .HasForeignKey("OrderID")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Order");
                 });
 
             modelBuilder.Entity("LearningAPI.Models.Order", b =>
