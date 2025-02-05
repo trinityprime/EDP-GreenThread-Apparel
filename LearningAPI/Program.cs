@@ -15,6 +15,7 @@ builder.Services.AddControllers()
     {
         options.JsonSerializerOptions.Converters.Add(new JsonStringEnumConverter());
         options.JsonSerializerOptions.PropertyNameCaseInsensitive = true;
+        options.JsonSerializerOptions.ReferenceHandler = System.Text.Json.Serialization.ReferenceHandler.Preserve;
     }); builder.Services.AddDbContext<MyDbContext>();
 builder.Services.AddAutoMapper(typeof(Program)); // Registers AutoMapper
 

@@ -1,6 +1,7 @@
 ﻿using System;
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
+using System.Text.Json.Serialization;
 
 namespace LearningAPI.Models
 {
@@ -20,6 +21,7 @@ namespace LearningAPI.Models
         [Required]
         public int ProductID { get; set; }
         [ForeignKey("ProductID")]
+        [JsonIgnore]
         public virtual Product? Product { get; set; }
 
         // Quantity of product
