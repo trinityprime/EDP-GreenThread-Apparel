@@ -94,6 +94,31 @@ namespace LearningAPI.Migrations
                 });
 
             migrationBuilder.CreateTable(
+                name: "CustomerServices",
+                columns: table => new
+                {
+                    CustomerServiceID = table.Column<int>(type: "int", nullable: false)
+                        .Annotation("SqlServer:Identity", "1, 1"),
+                    Comment = table.Column<string>(type: "nvarchar(1000)", maxLength: 1000, nullable: false),
+                    Status = table.Column<int>(type: "int", nullable: false),
+                    CreatedAt = table.Column<DateTime>(type: "datetime", nullable: false),
+                    UpdatedAt = table.Column<DateTime>(type: "datetime", nullable: false),
+                    NeedReply = table.Column<bool>(type: "bit", nullable: false),
+                    AdminNote = table.Column<string>(type: "nvarchar(1000)", maxLength: 1000, nullable: false),
+                    UserID = table.Column<int>(type: "int", nullable: false)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_CustomerServices", x => x.CustomerServiceID);
+                    table.ForeignKey(
+                        name: "FK_CustomerServices_Users_UserID",
+                        column: x => x.UserID,
+                        principalTable: "Users",
+                        principalColumn: "UserID",
+                        onDelete: ReferentialAction.Cascade);
+                });
+
+            migrationBuilder.CreateTable(
                 name: "Payments",
                 columns: table => new
                 {
@@ -267,6 +292,11 @@ namespace LearningAPI.Migrations
                 });
 
             migrationBuilder.CreateIndex(
+                name: "IX_CustomerServices_UserID",
+                table: "CustomerServices",
+                column: "UserID");
+
+            migrationBuilder.CreateIndex(
                 name: "IX_Deliveries_OrderID",
                 table: "Deliveries",
                 column: "OrderID");
@@ -332,6 +362,9 @@ namespace LearningAPI.Migrations
         {
             migrationBuilder.DropTable(
                 name: "Admins");
+
+            migrationBuilder.DropTable(
+                name: "CustomerServices");
 
             migrationBuilder.DropTable(
                 name: "Deliveries");

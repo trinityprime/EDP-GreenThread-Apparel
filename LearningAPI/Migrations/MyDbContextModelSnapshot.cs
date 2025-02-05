@@ -58,6 +58,46 @@ namespace LearningAPI.Migrations
                     b.ToTable("Admins");
                 });
 
+            modelBuilder.Entity("LearningAPI.Models.CustomerService", b =>
+                {
+                    b.Property<int>("CustomerServiceID")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("CustomerServiceID"));
+
+                    b.Property<string>("AdminNote")
+                        .IsRequired()
+                        .HasMaxLength(1000)
+                        .HasColumnType("nvarchar(1000)");
+
+                    b.Property<string>("Comment")
+                        .IsRequired()
+                        .HasMaxLength(1000)
+                        .HasColumnType("nvarchar(1000)");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime");
+
+                    b.Property<bool>("NeedReply")
+                        .HasColumnType("bit");
+
+                    b.Property<int>("Status")
+                        .HasColumnType("int");
+
+                    b.Property<DateTime>("UpdatedAt")
+                        .HasColumnType("datetime");
+
+                    b.Property<int>("UserID")
+                        .HasColumnType("int");
+
+                    b.HasKey("CustomerServiceID");
+
+                    b.HasIndex("UserID");
+
+                    b.ToTable("CustomerServices");
+                });
+
             modelBuilder.Entity("LearningAPI.Models.Delivery", b =>
                 {
                     b.Property<int>("DeliveryID")
@@ -405,6 +445,17 @@ namespace LearningAPI.Migrations
                     b.HasKey("UserID");
 
                     b.ToTable("Users");
+                });
+
+            modelBuilder.Entity("LearningAPI.Models.CustomerService", b =>
+                {
+                    b.HasOne("LearningAPI.Models.User", "User")
+                        .WithMany()
+                        .HasForeignKey("UserID")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("User");
                 });
 
             modelBuilder.Entity("LearningAPI.Models.Delivery", b =>
