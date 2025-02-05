@@ -164,7 +164,7 @@ Content-Type: application/json
 }
 
 ###
-POST {{LearningAPI_HostAddress}}/api/shoppingcart/1
+PUT {{LearningAPI_HostAddress}}/api/shoppingcart/1
 Content-Type: application/json
 
 {
@@ -245,5 +245,38 @@ Content-Type: application/json
 
 
 GET {{LearningAPI_HostAddress}}/api/delivery
+
+###
+
+POST {{LearningAPI_HostAddress}}/api/refund
+Content-Type: application/json
+Authorization: Bearer {{token}}
+
+
+{
+  "orderID": 1,
+  "refundAmount": 50.00
+}
+
+### only admin
+PUT {{LearningAPI_HostAddress}}/api/refund/3/status
+Content-Type: application/json
+
+{
+  "refundStatus": "Completed"
+}
+
+### only user
+
+PUT {{LearningAPI_HostAddress}}/api/refund/3
+Content-Type: application/json
+
+{
+  "refundStatus": "Pending"
+}
+
+###
+
+GET {{LearningAPI_HostAddress}}/api/refund
 
 ###

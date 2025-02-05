@@ -239,6 +239,33 @@ namespace LearningAPI.Migrations
                         onDelete: ReferentialAction.Cascade);
                 });
 
+            migrationBuilder.CreateTable(
+                name: "Refunds",
+                columns: table => new
+                {
+                    RefundID = table.Column<int>(type: "int", nullable: false)
+                        .Annotation("SqlServer:Identity", "1, 1"),
+                    UserID = table.Column<int>(type: "int", nullable: false),
+                    OrderID = table.Column<int>(type: "int", nullable: false),
+                    RefundAmount = table.Column<decimal>(type: "decimal(18,2)", nullable: false),
+                    RefundDate = table.Column<DateTime>(type: "datetime2", nullable: false),
+                    RefundStatus = table.Column<int>(type: "int", nullable: false)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_Refunds", x => x.RefundID);
+                    table.ForeignKey(
+                        name: "FK_Refunds_Orders_OrderID",
+                        column: x => x.OrderID,
+                        principalTable: "Orders",
+                        principalColumn: "OrderID");
+                    table.ForeignKey(
+                        name: "FK_Refunds_Users_UserID",
+                        column: x => x.UserID,
+                        principalTable: "Users",
+                        principalColumn: "UserID");
+                });
+
             migrationBuilder.CreateIndex(
                 name: "IX_Deliveries_OrderID",
                 table: "Deliveries",
@@ -275,6 +302,16 @@ namespace LearningAPI.Migrations
                 column: "ProductCategoryID");
 
             migrationBuilder.CreateIndex(
+                name: "IX_Refunds_OrderID",
+                table: "Refunds",
+                column: "OrderID");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_Refunds_UserID",
+                table: "Refunds",
+                column: "UserID");
+
+            migrationBuilder.CreateIndex(
                 name: "IX_ShoppingCarts_PaymentID",
                 table: "ShoppingCarts",
                 column: "PaymentID");
@@ -301,6 +338,9 @@ namespace LearningAPI.Migrations
 
             migrationBuilder.DropTable(
                 name: "OrderSummaryItem");
+
+            migrationBuilder.DropTable(
+                name: "Refunds");
 
             migrationBuilder.DropTable(
                 name: "ShoppingCarts");

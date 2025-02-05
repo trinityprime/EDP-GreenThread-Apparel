@@ -12,7 +12,7 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace LearningAPI.Migrations
 {
     [DbContext(typeof(MyDbContext))]
-    [Migration("20250205050757_initialcreate")]
+    [Migration("20250205052511_initialcreate")]
     partial class initialcreate
     {
         /// <inheritdoc />
@@ -288,6 +288,38 @@ namespace LearningAPI.Migrations
                     b.ToTable("ProductCategory");
                 });
 
+            modelBuilder.Entity("LearningAPI.Models.Refund", b =>
+                {
+                    b.Property<int>("RefundID")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("RefundID"));
+
+                    b.Property<int>("OrderID")
+                        .HasColumnType("int");
+
+                    b.Property<decimal>("RefundAmount")
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<DateTime>("RefundDate")
+                        .HasColumnType("datetime2");
+
+                    b.Property<int>("RefundStatus")
+                        .HasColumnType("int");
+
+                    b.Property<int>("UserID")
+                        .HasColumnType("int");
+
+                    b.HasKey("RefundID");
+
+                    b.HasIndex("OrderID");
+
+                    b.HasIndex("UserID");
+
+                    b.ToTable("Refunds");
+                });
+
             modelBuilder.Entity("LearningAPI.Models.ShoppingCart", b =>
                 {
                     b.Property<int>("ShoppingCartID")
@@ -447,6 +479,25 @@ namespace LearningAPI.Migrations
                         .IsRequired();
 
                     b.Navigation("ProductCategory");
+                });
+
+            modelBuilder.Entity("LearningAPI.Models.Refund", b =>
+                {
+                    b.HasOne("LearningAPI.Models.Order", "Order")
+                        .WithMany()
+                        .HasForeignKey("OrderID")
+                        .OnDelete(DeleteBehavior.NoAction)
+                        .IsRequired();
+
+                    b.HasOne("LearningAPI.Models.User", "User")
+                        .WithMany()
+                        .HasForeignKey("UserID")
+                        .OnDelete(DeleteBehavior.NoAction)
+                        .IsRequired();
+
+                    b.Navigation("Order");
+
+                    b.Navigation("User");
                 });
 
             modelBuilder.Entity("LearningAPI.Models.ShoppingCart", b =>

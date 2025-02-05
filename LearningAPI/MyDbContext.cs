@@ -38,8 +38,7 @@ namespace LearningAPI
         public DbSet<Order> Orders { get; set; }
         public DbSet<Delivery> Deliveries { get; set; }
 
-
-
+        public DbSet<Refund> Refunds { get; set; }
 
 
         // Configure relationships between entities
@@ -65,6 +64,18 @@ namespace LearningAPI
                 .HasOne(p => p.ProductCategory)
                 .WithMany(c => c.Products)
                 .HasForeignKey(p => p.ProductCategoryID);
+
+            modelBuilder.Entity<Refund>()
+                .HasOne(r => r.User)
+                .WithMany()
+                .HasForeignKey(r => r.UserID)
+                .OnDelete(DeleteBehavior.NoAction); // Prevent cascading delete
+
+            modelBuilder.Entity<Refund>()
+                .HasOne(r => r.Order)
+                .WithMany()
+                .HasForeignKey(r => r.OrderID)
+                .OnDelete(DeleteBehavior.NoAction);
         }
 
 
