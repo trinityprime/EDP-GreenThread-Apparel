@@ -1,10 +1,12 @@
-﻿using LearningAPI.Models;
-using Microsoft.AspNetCore.Authorization;
+﻿using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Identity.Data;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.IdentityModel.Tokens;
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using System.Text;
+using LearningAPI.Models;
+
 
 namespace LearningAPI.Controllers
 {
@@ -22,7 +24,7 @@ namespace LearningAPI.Controllers
 		}
 
 		[HttpPost("register")]
-		public IActionResult Register(RegisterRequest request)
+		public IActionResult Register(Models.RegisterRequest request)
 		{
 			// Trim string values
 			request.FirstName = request.FirstName.Trim();
@@ -51,7 +53,7 @@ namespace LearningAPI.Controllers
 				PostalCode = request.PostalCode,
 				CreatedAt = now,
 				UpdatedAt = now,
-				IsDeactivated = false, 
+				IsDeactivated = false,
 				Role = "User"
 			};
 
@@ -62,7 +64,7 @@ namespace LearningAPI.Controllers
 		}
 
 		[HttpPost("login")]
-		public IActionResult Login(LoginRequest request)
+		public IActionResult Login(Models.LoginRequest request)
 		{
 			// Trim string values
 			request.Email = request.Email.Trim().ToLower();
@@ -110,7 +112,7 @@ namespace LearningAPI.Controllers
 				.Select(c => c.Value).SingleOrDefault();
 			var postalCode = User.Claims.Where(c => c.Type == "PostalCode")
 				.Select(c => c.Value).SingleOrDefault();
-			var role = User.Claims.Where(c => c.Type == ClaimTypes.Role) 
+			var role = User.Claims.Where(c => c.Type == ClaimTypes.Role)
 				.Select(c => c.Value).SingleOrDefault();
 
 			if (id != 0 && firstName != null && lastName != null && email != null && postalCode != null && role != null)
@@ -191,7 +193,7 @@ namespace LearningAPI.Controllers
 		public IActionResult Update(int id, UpdateRequest request)
 		{
 			// Retrieve user by ID
-			var user = _context.Users.FirstOrDefault(u => u.UserID == id && !u.IsDeactivated); 
+			var user = _context.Users.FirstOrDefault(u => u.UserID == id && !u.IsDeactivated);
 			if (user == null)
 			{
 				return NotFound(new { message = "User not found or account deactivated." });
@@ -209,6 +211,23 @@ namespace LearningAPI.Controllers
 			_context.SaveChanges();
 
 			return Ok(new { message = "User updated successfully." });
+		}
+
+		// otp reset password
+		[HttpPost("reset-password")]
+		public IActionResult ResetPassword(Models.ResetPasswordRequest request)
+		{
+			var user = _context.Users.FirstOrDefault(u => u.Email == request.Email);
+			if (user == null)
+			{
+				return NotFound(new { message = "User not found." });
+			}
+
+			user.Password = BCrypt.Net.BCrypt.HashPassword(request.Password);
+			user.UpdatedAt = DateTime.Now;
+			_context.SaveChanges();
+
+			return Ok(new { message = "Password has been reset successfully." });
 		}
 
 		// Deactivate and reactivate user

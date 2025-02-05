@@ -26,6 +26,8 @@ namespace LearningAPI.Models
 		public string PostalCode { get; set; } = string.Empty;
 
 		public bool IsDeactivated { get; set; } = false;
+		public string? OtpCode { get; set; }
+		public DateTime? OtpExpiry { get; set; }
 
 		[Column(TypeName = "datetime")]
 		public DateTime CreatedAt { get; set; }
@@ -33,7 +35,7 @@ namespace LearningAPI.Models
 		[Column(TypeName = "datetime")]
 		public DateTime UpdatedAt { get; set; }
 
-		public string Role { get; set; } = "User"; 
+		public string Role { get; set; } = "User";
 
 		// This is a self-referencing navigation property
 		[ForeignKey("UserID")] // Specify that this collection will reference the UserID property

@@ -1,6 +1,6 @@
 import "./App.css";
 import { useState, useEffect } from "react";
-import {Container, AppBar, Toolbar, Typography, Box, Button } from "@mui/material";
+import { Container, AppBar, Toolbar, Typography, Box, Button } from "@mui/material";
 import { BrowserRouter as Router, Routes, Route, Link } from "react-router-dom";
 import { ThemeProvider } from "@mui/material/styles";
 import MyTheme from "./themes/MyTheme";
@@ -16,6 +16,9 @@ import UpdateForm from "./pages/components/UpdateForm";
 import CreateAdminForm from "./pages/components/CreateAdminForm";
 import CreateUserForm from "./pages/components/CreateUserForm";
 import NotAuthorized from "./pages/components/NotAuthorized";
+import RequestOtp from "./pages/RequestOtp";
+import VerifyOtp from "./pages/VerifyOtp";
+import ResetPassword from "./pages/ResetPassword";
 
 function App() {
     const [user, setUser] = useState(null);
@@ -74,12 +77,15 @@ function App() {
                             <Route path={"/login"} element={<Login />} />
                             <Route path={"/admin-dashboard"} element={<AdminDashboard />} />
                             <Route path={"/profile"} element={<Profile />} />
-                            <Route path={"/update-user"} element={<UpdateUser />} /> 
+                            <Route path={"/update-user"} element={<UpdateUser />} />
                             <Route path="/update-user/:id" element={<UpdateForm type="user" />} />
                             <Route path="/update-admin/:id" element={<UpdateForm type="admin" />} />
                             <Route path="/create-admin" element={<CreateAdminForm />} />
                             <Route path="/create-user" element={<CreateUserForm />} />
                             <Route path="/not-authorized" element={<NotAuthorized />} />
+                            <Route path="/request-otp" element={<RequestOtp />} />
+                            <Route path="/verify-otp" element={<VerifyOtp />} />
+                            <Route path="/reset-password" element={<ResetPassword />} />
 
                         </Routes>
                     </Container>
