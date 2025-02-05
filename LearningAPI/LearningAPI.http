@@ -1,5 +1,5 @@
 ﻿@LearningAPI_HostAddress = https://localhost:7004
-@token=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJuYW1laWQiOiIxIiwiZ2l2ZW5fbmFtZSI6IlNrYmlkaSIsImZhbWlseV9uYW1lIjoiTGltIiwiZW1haWwiOiJ0ZXN0QG55cC5lZHUuc2ciLCJQb3N0YWxDb2RlIjoiMTExMTExIiwibmJmIjoxNzM2ODczNzYzLCJleHAiOjE3Mzk0NjU3NjMsImlhdCI6MTczNjg3Mzc2M30.IdFwD-ilEMO4qAsUxty1MElQyDVCt6DJiqdwnI_EP8U
+@token = eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJuYW1laWQiOiIxIiwiZ2l2ZW5fbmFtZSI6IlN0aWxsIiwiZmFtaWx5X25hbWUiOiJXYXRlciIsImVtYWlsIjoidGVzdEBueXAuZWR1LnNnIiwiUG9zdGFsQ29kZSI6IjExMTExMSIsInJvbGUiOiJVc2VyIiwibmJmIjoxNzM4NzQ5MzIzLCJleHAiOjE3NDEzNDEzMjMsImlhdCI6MTczODc0OTMyM30.EXa7VTMxQ991gnWx4zrES-dP34oF-7EK2RqJZGzmQCU
 // user
 POST {{LearningAPI_HostAddress}}/user/register
 Content-Type: application/json
@@ -68,8 +68,8 @@ POST {{LearningAPI_HostAddress}}/admin/register
 Content-Type: application/json
 
 {
-  "Email": "admin@example.com",
-  "Password": "password@123"
+  "Email": "superadmin@greenthread.com",
+  "Password": "superadmin@123"
 }
 
 ### register
@@ -79,8 +79,8 @@ POST {{LearningAPI_HostAddress}}/admin/login
 Content-Type: application/json
 
 {
-  "Email": "admin@example.com",
-  "Password": "password@123"
+  "Email": "superadmin@greenthread.com",
+  "Password": "superadmin@123"
 }
 
 ### login
@@ -120,4 +120,174 @@ PUT {{LearningAPI_HostAddress}}/admin/deactivate/{{adminid}}
 
 ### deactivate admin
 
+POST {{LearningAPI_HostAddress}}/api/product
+Content-Type: application/json
+{
+  "productName": "Men's T-Shirt",
+  "productDescription": "High-quality cotton t-shirt.",
+  "price": 29.99,
+  "stock": 100,
+  "size": "S",   
+  "discountPercentage": 10,
+  "status": "Active",
+  "productCategoryID": 1
+}
+
+
+### create this first
+
+POST {{LearningAPI_HostAddress}}/api/productcategory
+Content-Type: application/json
+
+{
+  
+  "productCategoryName": "Clothing"
+}
+###
+
+
+POST {{LearningAPI_HostAddress}}/api/shoppingcart
+Content-Type: application/json
+
+{
+  "userID": 1,
+  "productID": 1,
+  "quantity": 20
+}
+
+###
+PUT {{LearningAPI_HostAddress}}/api/shoppingcart/1
+Content-Type: application/json
+
+{
+  "quantity": 10
+}
+
+###
+
+POST {{LearningAPI_HostAddress}}/api/payment
+Content-Type: application/json
+Authorization: Bearer {{token}}
+
+
+{
+  "userID": 1,
+  "shoppingCartID": 1,
+  "address": "123 Green Street, New York",
+  "phoneNumber": "1234567890",
+  "paymentMethod": "Credit Card",
+  "amountPaid": 59.99
+}
+
+
+###
+
+
+
+POST {{LearningAPI_HostAddress}}/api/order
+Content-Type: application/json
+Authorization: Bearer {{token}}
+
+
+{
+  "userID": 1,
+  "paymentID": 1,
+  "grandTotal": 599.80
+}
+
+
+###
+
+
+
+GET {{LearningAPI_HostAddress}}/api/productcategory
+
+###
+
+
+GET {{LearningAPI_HostAddress}}/api/product
+
+###
+
+GET {{LearningAPI_HostAddress}}/api/shoppingcart
+
+###
+
+GET {{LearningAPI_HostAddress}}/api/payment
+Authorization: Bearer {{token}}
+
+
+###
+
+GET {{LearningAPI_HostAddress}}/api/order
+
+###
+
+POST {{LearningAPI_HostAddress}}/api/delivery
+Content-Type: application/json
+
+{
+  "orderID": 1,
+  "address": "123 Green Street, New York, NY 10001",
+  "deliveryStatus": "Pending"
+}
+
+###
+
+
+
+GET {{LearningAPI_HostAddress}}/api/delivery
+
+###
+
+POST {{LearningAPI_HostAddress}}/api/refund
+Content-Type: application/json
+Authorization: Bearer {{token}}
+
+
+{
+  "orderID": 1,
+  "refundAmount": 50.00
+}
+
+### only admin
+PUT {{LearningAPI_HostAddress}}/api/refund/3/status
+Content-Type: application/json
+
+{
+  "refundStatus": "Completed"
+}
+
+### only user
+
+PUT {{LearningAPI_HostAddress}}/api/refund/3
+Content-Type: application/json
+
+{
+  "refundStatus": "Pending"
+}
+
+###
+
+GET {{LearningAPI_HostAddress}}/api/refund
+
+###
+
+POST {{LearningAPI_HostAddress}}/api/customerservice
+Content-Type: application/json
+
+{
+  "comment": "I received a defective item and need a replacement.",
+  "status": "Pending",
+  "needReply": true,
+  "adminNote": "",
+  "userID": 1
+}
+
+
+###
+
+GET {{LearningAPI_HostAddress}}/api/customerservice
+
+###
 

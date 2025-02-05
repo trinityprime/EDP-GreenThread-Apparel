@@ -6,14 +6,24 @@ using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
 using System.Text;
+using System.Text.Json.Serialization;
 
 var builder = WebApplication.CreateBuilder(args);
 builder.Services.AddScoped<OtpService>();
 builder.Services.AddScoped<EmailService>();
 
 // Add services to the container.
-builder.Services.AddControllers();
+builder.Services.AddControllers()
+	.AddJsonOptions(options =>
+	{
+		options.JsonSerializerOptions.Converters.Add(new JsonStringEnumConverter());
+		options.JsonSerializerOptions.PropertyNameCaseInsensitive = true;
+		options.JsonSerializerOptions.PropertyNamingPolicy = null; // Keep PascalCase
+		options.JsonSerializerOptions.DefaultIgnoreCondition = System.Text.Json.Serialization.JsonIgnoreCondition.WhenWritingNull;
+	});
+
 builder.Services.AddDbContext<MyDbContext>();
+builder.Services.AddAutoMapper(typeof(Program));
 
 // Add CORS policy
 var allowedOrigins = builder.Configuration.GetSection("AllowedOrigins").Get<string[]>();
