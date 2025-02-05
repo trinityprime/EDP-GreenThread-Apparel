@@ -1,6 +1,6 @@
 import React, { useContext, useState } from 'react';
 import { Box, Typography, TextField, Button, Select, MenuItem } from '@mui/material';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom';
 import { useFormik } from 'formik';
 import * as yup from 'yup';
 import http from '../http';
@@ -102,6 +102,12 @@ function Login() {
                     type="submit">
                     Login as {loginType}
                 </Button>
+
+                <Typography variant="body2" sx={{ mt: 2 }}>
+                    <Link to="/request-otp" style={{ textDecoration: 'none', color: '#1976d2' }}>
+                        Forgot Password?
+                    </Link>
+                </Typography>
             </Box>
             <ToastContainer />
         </Box>

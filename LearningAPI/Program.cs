@@ -1,12 +1,15 @@
 using LearningAPI;
 using LearningAPI.Controllers;
 using LearningAPI.Models;
+using LearningAPI.Services;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
 using System.Text;
 
 var builder = WebApplication.CreateBuilder(args);
+builder.Services.AddScoped<OtpService>();
+builder.Services.AddScoped<EmailService>();
 
 // Add services to the container.
 builder.Services.AddControllers();
@@ -116,7 +119,10 @@ if (app.Environment.IsDevelopment())
 	app.UseSwaggerUI();
 }
 
-app.UseHttpsRedirection();
+app.UseRouting();
+
+//app.UseHttpsRedirection();
+
 
 // Enable CORS before other middleware
 app.UseCors();

@@ -26,6 +26,8 @@ namespace LearningAPI.Models
 		public string PostalCode { get; set; } = string.Empty;
 
 		public bool IsDeactivated { get; set; } = false;
+		public string? OtpCode { get; set; }
+		public DateTime? OtpExpiry { get; set; }
 
 		[Column(TypeName = "datetime")]
 		public DateTime CreatedAt { get; set; }

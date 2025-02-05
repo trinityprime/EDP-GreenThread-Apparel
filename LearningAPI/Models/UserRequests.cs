@@ -56,4 +56,12 @@ namespace LearningAPI.Models
 		[Required, RegularExpression(@"^\d{6}$", ErrorMessage = "Postal code must be a 6-digit number.")]
 		public string PostalCode { get; set; } = string.Empty;
 	}
+	public class ResetPasswordRequest
+	{
+		[Required, EmailAddress, MaxLength(50)]
+		public string Email { get; set; } = string.Empty;
+
+		[Required, MinLength(8), MaxLength(50)]
+		public string Password { get; set; } = string.Empty;
+	}
 }
