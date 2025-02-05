@@ -28,6 +28,7 @@ namespace LearningAPI.Models
 		public bool IsDeactivated { get; set; } = false;
 		public string? OtpCode { get; set; }
 		public DateTime? OtpExpiry { get; set; }
+		public List<string> PasswordHistory { get; set; } = new List<string>();
 
 		[Column(TypeName = "datetime")]
 		public DateTime CreatedAt { get; set; }

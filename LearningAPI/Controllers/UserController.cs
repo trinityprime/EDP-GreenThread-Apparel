@@ -223,10 +223,27 @@ namespace LearningAPI.Controllers
 				return NotFound(new { message = "User not found." });
 			}
 
-			user.Password = BCrypt.Net.BCrypt.HashPassword(request.Password);
-			user.UpdatedAt = DateTime.Now;
-			_context.SaveChanges();
+			// Check if the new password matches any of the last 3 passwords
+			if (user.PasswordHistory.Any(oldPassword => BCrypt.Net.BCrypt.Verify(request.Password, oldPassword)))
+			{
+				return BadRequest(new { message = "You cannot reuse your last 3 passwords." });
+			}
 
+			// Hash the new password
+			string newPasswordHash = BCrypt.Net.BCrypt.HashPassword(request.Password);
+
+			// Update password and password history
+			user.Password = newPasswordHash;
+			user.UpdatedAt = DateTime.Now;
+
+			// Maintain only the last 3 passwords
+			user.PasswordHistory.Add(newPasswordHash);
+			if (user.PasswordHistory.Count > 3)
+			{
+				user.PasswordHistory.RemoveAt(0);
+			}
+
+			_context.SaveChanges();
 			return Ok(new { message = "Password has been reset successfully." });
 		}
 

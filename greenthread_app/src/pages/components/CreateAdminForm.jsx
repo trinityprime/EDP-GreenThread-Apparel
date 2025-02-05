@@ -114,7 +114,8 @@ function CreateAdminForm() {
                         sx={{
                             opacity: (!formik.isValid || formik.isSubmitting) ? 0.6 : 1,
                             cursor: (!formik.isValid || formik.isSubmitting) ? 'not-allowed' : 'pointer',
-                            transition: 'opacity 0.3s ease'
+                            transition: 'opacity 0.3s ease',
+                            width: '100%' // Ensures Register button is full width
                         }}
                     >
                         {formik.isSubmitting ? 'Registering...' : 'Register'}
@@ -122,11 +123,20 @@ function CreateAdminForm() {
                     <Button
                         fullWidth
                         variant="outlined"
+                        sx={{
+                            color: 'red', 
+                            borderColor: 'red', 
+                            '&:hover': {
+                                borderColor: 'darkred', 
+                                color: 'darkred' 
+                            }
+                        }}
                         onClick={() => navigate('/admin-dashboard')}
                     >
                         Cancel
                     </Button>
                 </Box>
+
             </Box>
             <ToastContainer />
         </Box>

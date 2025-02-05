@@ -160,11 +160,11 @@ function CreateUserForm() {
                     <Button
                         variant="contained"
                         type="submit"
-                        disabled={!formik.isValid || formik.isSubmitting}
                         sx={{
                             opacity: (!formik.isValid || formik.isSubmitting) ? 0.6 : 1,
                             cursor: (!formik.isValid || formik.isSubmitting) ? 'not-allowed' : 'pointer',
-                            transition: 'opacity 0.3s ease'
+                            transition: 'opacity 0.3s ease',
+                            width: '100%' // Add this to ensure equal width
                         }}
                     >
                         {formik.isSubmitting ? 'Registering...' : 'Register'}
@@ -172,6 +172,14 @@ function CreateUserForm() {
                     <Button
                         fullWidth
                         variant="outlined"
+                        sx={{
+                            color: 'red', // Red text
+                            borderColor: 'red',
+                            '&:hover': {
+                                borderColor: 'darkred', 
+                                color: 'darkred' 
+                            }
+                        }}
                         onClick={() => navigate('/admin-dashboard')}
                     >
                         Cancel
