@@ -259,6 +259,9 @@ namespace LearningAPI.Migrations
 
                     SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("ProductID"));
 
+                    b.Property<int>("Category")
+                        .HasColumnType("int");
+
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("datetime");
 
@@ -271,9 +274,6 @@ namespace LearningAPI.Migrations
 
                     b.Property<decimal>("Price")
                         .HasColumnType("decimal(10,2)");
-
-                    b.Property<int>("ProductCategoryID")
-                        .HasColumnType("int");
 
                     b.Property<string>("ProductDescription")
                         .IsRequired()
@@ -299,30 +299,7 @@ namespace LearningAPI.Migrations
 
                     b.HasKey("ProductID");
 
-                    b.HasIndex("ProductCategoryID");
-
                     b.ToTable("Products");
-                });
-
-            modelBuilder.Entity("LearningAPI.Models.ProductCategory", b =>
-                {
-                    b.Property<int>("ProductCategoryID")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("int");
-
-                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("ProductCategoryID"));
-
-                    b.Property<DateTime>("CreatedAt")
-                        .HasColumnType("datetime");
-
-                    b.Property<string>("ProductCategoryName")
-                        .IsRequired()
-                        .HasMaxLength(50)
-                        .HasColumnType("nvarchar(50)");
-
-                    b.HasKey("ProductCategoryID");
-
-                    b.ToTable("ProductCategory");
                 });
 
             modelBuilder.Entity("LearningAPI.Models.Refund", b =>
@@ -528,17 +505,6 @@ namespace LearningAPI.Migrations
                     b.Navigation("User");
                 });
 
-            modelBuilder.Entity("LearningAPI.Models.Product", b =>
-                {
-                    b.HasOne("LearningAPI.Models.ProductCategory", "ProductCategory")
-                        .WithMany("Products")
-                        .HasForeignKey("ProductCategoryID")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.Navigation("ProductCategory");
-                });
-
             modelBuilder.Entity("LearningAPI.Models.Refund", b =>
                 {
                     b.HasOne("LearningAPI.Models.Order", "Order")
@@ -598,11 +564,6 @@ namespace LearningAPI.Migrations
             modelBuilder.Entity("LearningAPI.Models.Payment", b =>
                 {
                     b.Navigation("ShoppingCart");
-                });
-
-            modelBuilder.Entity("LearningAPI.Models.ProductCategory", b =>
-                {
-                    b.Navigation("Products");
                 });
 
             modelBuilder.Entity("LearningAPI.Models.User", b =>

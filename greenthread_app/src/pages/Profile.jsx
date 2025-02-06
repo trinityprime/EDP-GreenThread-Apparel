@@ -1,8 +1,8 @@
-import React, { useContext, useState } from 'react';
-import { Box, Typography, Button, Dialog, DialogActions, DialogContent, DialogContentText, DialogTitle } from '@mui/material';
-import { useNavigate } from 'react-router-dom';
-import axios from '../http';
-import UserContext from '../contexts/UserContext';
+import React, { useContext, useState } from "react";
+import { Box, Typography, Button, Dialog, DialogActions, DialogContent, DialogContentText, DialogTitle } from "@mui/material";
+import { useNavigate } from "react-router-dom";
+import axios from "../http";
+import UserContext from "../contexts/UserContext";
 
 function Profile() {
     const { user, setUser } = useContext(UserContext);
@@ -10,7 +10,19 @@ function Profile() {
     const navigate = useNavigate();
 
     const handleUpdateClick = () => {
-        navigate('/update-user');
+        navigate("/update-user");
+    };
+
+    const handleShoppingCartClick = () => {
+        navigate("/shopping-cart");
+    };
+
+    const handleOrdersClick = () => {
+        navigate("/orders");
+    }
+
+    const handleViewProductsClick = () => {
+        navigate("/products");
     };
 
     const handleDeactivateClick = () => {
@@ -26,15 +38,15 @@ function Profile() {
             .then(() => {
                 setUser(null);
                 localStorage.clear();
-                navigate('/login');
+                navigate("/login");
             })
-            .catch(error => {
-                console.error('Error deactivating user:', error);
+            .catch((error) => {
+                console.error("Error deactivating user:", error);
             });
     };
 
     return (
-        <Box sx={{ mt: 4, mx: 'auto', maxWidth: '500px' }}>
+        <Box sx={{ mt: 4, mx: "auto", maxWidth: "500px" }}>
             <Typography variant="h5" sx={{ mb: 2 }}>
                 Profile
             </Typography>
@@ -42,10 +54,24 @@ function Profile() {
             <Typography variant="body1"><strong>Last Name:</strong> {user.lastName}</Typography>
             <Typography variant="body1"><strong>Email:</strong> {user.email}</Typography>
             <Typography variant="body1"><strong>Postal Code:</strong> {user.postalCode}</Typography>
+
             <Button variant="contained" color="primary" sx={{ mt: 2 }} onClick={handleUpdateClick}>
-                Update
+                Update Profile
             </Button>
-            <Button variant="contained" color="secondary" sx={{ mt: 2, ml: 2 }} onClick={handleDeactivateClick}>
+
+            <Button variant="contained" color="secondary" sx={{ mt: 2, ml: 2 }} onClick={handleShoppingCartClick}>
+                View Shopping Cart
+            </Button>
+
+            <Button variant="contained" color="primary" sx={{ mt: 2, ml: 2 }} onClick={handleOrdersClick}>
+                View My Orders
+            </Button>
+
+            <Button variant="contained" color="success" sx={{ mt: 2, ml: 2 }} onClick={handleViewProductsClick}>
+                View Products
+            </Button>
+
+            <Button variant="contained" color="error" sx={{ mt: 2, ml: 2 }} onClick={handleDeactivateClick}>
                 Deactivate Account
             </Button>
 

@@ -3,8 +3,11 @@ using LearningAPI.Models;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
+using System;
+using System.Collections.Generic;
 using System.IO;
-using System.Security.Claims;
+using System.Linq;
+using System.Threading.Tasks;
 
 namespace LearningAPI.Controllers
 {
@@ -23,12 +26,12 @@ namespace LearningAPI.Controllers
             _logger = logger;
         }
 
-        // 🖼️ Handle Multiple Image Uploads
-        private List<string> UploadImageFiles(List<IFormFile> files)
+        // 🖼️ Handle Multiple Image Uploads (Now Nullable)
+        private List<string>? UploadImageFiles(List<IFormFile>? files)
         {
-            var uploadedPaths = new List<string>();
-            if (files == null || files.Count == 0) return uploadedPaths;
+            if (files == null || files.Count == 0) return null; // ✅ Return null instead of empty list
 
+            var uploadedPaths = new List<string>();
             var uploadsFolder = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot", "uploads", "images");
 
             if (!Directory.Exists(uploadsFolder))
@@ -49,7 +52,7 @@ namespace LearningAPI.Controllers
                     uploadedPaths.Add($"/uploads/images/{fileName}");
                 }
             }
-            return uploadedPaths;
+            return uploadedPaths.Count > 0 ? uploadedPaths : null;
         }
 
         // 📋 GET All Products with Optional Search
@@ -58,7 +61,7 @@ namespace LearningAPI.Controllers
         {
             try
             {
-                IQueryable<Product> query = _context.Products.Include(p => p.ProductCategory);
+                IQueryable<Product> query = _context.Products;
 
                 if (!string.IsNullOrEmpty(search))
                     query = query.Where(p => p.ProductName.Contains(search) || p.ProductDescription.Contains(search));
@@ -79,15 +82,12 @@ namespace LearningAPI.Controllers
         {
             try
             {
-                var product = await _context.Products
-                    .Include(p => p.ProductCategory)
-                    .FirstOrDefaultAsync(p => p.ProductID == id);
+                var product = await _context.Products.FirstOrDefaultAsync(p => p.ProductID == id);
 
                 if (product == null)
                     return NotFound("Product not found");
 
-                _logger.LogInformation($"Product Category: {product.ProductCategory?.ProductCategoryName}");
-
+                _logger.LogInformation($"Product Category: {product.Category}");
 
                 return Ok(product);
             }
@@ -98,8 +98,9 @@ namespace LearningAPI.Controllers
             }
         }
 
+        // 🛒 POST Add New Product
         [HttpPost]
-        public async Task<IActionResult> AddProduct([FromBody] Product product)
+        public async Task<IActionResult> AddProduct([FromForm] Product product, [FromForm] List<IFormFile>? imageFiles)
         {
             try
             {
@@ -110,12 +111,12 @@ namespace LearningAPI.Controllers
                 if (!Enum.IsDefined(typeof(ProductSize), product.Size))
                     return BadRequest(new { message = $"Invalid size value. Allowed values: {string.Join(", ", Enum.GetNames(typeof(ProductSize)))}" });
 
-                // Validate ProductCategoryID
-                var categoryExists = await _context.ProductCategory.AnyAsync(c => c.ProductCategoryID == product.ProductCategoryID);
-                if (!categoryExists)
-                {
-                    return BadRequest(new { message = $"Invalid ProductCategoryID: {product.ProductCategoryID}. Category does not exist." });
-                }
+                // Validate ProductCategory
+                if (!Enum.IsDefined(typeof(ProductCategory), product.Category))
+                    return BadRequest(new { message = $"Invalid category value. Allowed values: {string.Join(", ", Enum.GetNames(typeof(ProductCategory)))}" });
+
+                // ✅ Set ImageFiles only if images are uploaded
+                product.ImageFiles = UploadImageFiles(imageFiles);
 
                 // Set timestamps
                 product.CreatedAt = DateTime.UtcNow;
@@ -158,12 +159,13 @@ namespace LearningAPI.Controllers
                     existingProduct.Status = product.Status;
                 if (product.DiscountPercentage >= 0)
                     existingProduct.DiscountPercentage = product.DiscountPercentage;
-                if (product.ProductCategoryID > 0)
-                    existingProduct.ProductCategoryID = product.ProductCategoryID;
+                if (Enum.IsDefined(typeof(ProductCategory), product.Category))
+                    existingProduct.Category = product.Category;
 
-                // Update image files if new ones are uploaded
-                if (imageFiles != null && imageFiles.Count > 0)
-                    existingProduct.ImageFiles = UploadImageFiles(imageFiles);
+                // ✅ Only update ImageFiles if new images are uploaded
+                var newImages = UploadImageFiles(imageFiles);
+                if (newImages != null)
+                    existingProduct.ImageFiles = newImages;
 
                 existingProduct.UpdatedAt = DateTime.UtcNow;
                 await _context.SaveChangesAsync();

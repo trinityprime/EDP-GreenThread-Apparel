@@ -19,6 +19,13 @@ import NotAuthorized from "./pages/components/NotAuthorized";
 import RequestOtp from "./pages/RequestOtp";
 import VerifyOtp from "./pages/VerifyOtp";
 import ResetPassword from "./pages/ResetPassword";
+import ShoppingCart from "./pages/ShoppingCart";
+import Order from "./pages/Order";
+import Product from "./pages/Product";
+import CreateProductForm from "./pages/components/CreateProductForm";
+import CreatePaymentForm from "./pages/components/CreatePaymentForm";
+import Payment from "./pages/Payment";
+
 
 function App() {
     const [user, setUser] = useState(null);
@@ -86,6 +93,14 @@ function App() {
                             <Route path="/request-otp" element={<RequestOtp />} />
                             <Route path="/verify-otp" element={<VerifyOtp />} />
                             <Route path="/reset-password" element={<ResetPassword />} />
+                            <Route path="/shopping-cart" element={<ShoppingCart />} />
+                            <Route path="/orders" element={<Order />} /> 
+                            <Route path="/products" element={<Product />} />
+                            <Route path="/create-product" element={<CreateProductForm />} />
+                            <Route path="/create-payment" element={<CreatePaymentForm />} /> 
+                            <Route path="/payments" element={<Payment />} /> 
+
+
 
                         </Routes>
                     </Container>

@@ -122,19 +122,20 @@ PUT {{LearningAPI_HostAddress}}/admin/deactivate/{{adminid}}
 ### deactivate admin
 
 
-
 POST {{LearningAPI_HostAddress}}/api/product
 Content-Type: application/json
+
 {
   "productName": "Men's T-Shirt",
   "productDescription": "High-quality cotton t-shirt.",
   "price": 29.99,
   "stock": 100,
-  "size": "S",   
+  "size": "S",
   "discountPercentage": 10,
   "status": "Active",
-  "productCategoryID": 1
+  "category": "Shirt"
 }
+
 
 ###
 
@@ -146,26 +147,12 @@ Content-Type: application/json
 
 
 
-
-
-### create this first
-
-POST {{LearningAPI_HostAddress}}/api/productcategory
-Content-Type: application/json
-
-{
-  
-  "productCategoryName": "Clothing"
-}
-###
-
-
 POST {{LearningAPI_HostAddress}}/api/shoppingcart
 Content-Type: application/json
 
 {
   "userID": 1,
-  "productID": 1,
+  "productID": 2,
   "quantity": 20
 }
 
@@ -192,7 +179,7 @@ Authorization: Bearer {{token}}
 
 {
   "userID": 1,
-  "shoppingCartID": 1,
+  "shoppingCartID": 6,
   "address": "123 Green Street, New York",
   "phoneNumber": "1234567890",
   "paymentMethod": "Credit Card",
@@ -215,9 +202,9 @@ Authorization: Bearer {{token}}
 
 
 {
-  "userID": 1,
+  "userID": 3,
   "paymentID": 1,
-  "grandTotal": 599.80
+  "grandTotal": 30.00
 }
 
 ###

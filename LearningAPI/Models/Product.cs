@@ -47,11 +47,8 @@ namespace LearningAPI.Models
         public DateTime UpdatedAt { get; set; } = DateTime.UtcNow;
 
         // Foreign key property
-        public int ProductCategoryID { get; set; }
-        public ProductCategory? ProductCategory { get; set; }
-
-
-       
+        [Required]
+        public ProductCategory Category { get; set; } // Use Enum Instead of ProductCategoryID
     }
 
     public enum ProductSize
@@ -68,5 +65,14 @@ namespace LearningAPI.Models
         Active,
         OutOfStock,
         Discontinued
+    }
+
+    public enum ProductCategory
+    {
+        Shirt,
+        Pants,
+        Dresses,
+        Shoes,
+        Blouse
     }
 }

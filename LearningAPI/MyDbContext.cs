@@ -28,8 +28,6 @@ namespace LearningAPI
 		public DbSet<User> Users { get; set; }
 		public DbSet<Admin> Admins { get; set; }
 		public DbSet<Product> Products { get; set; }
-		public DbSet<ProductCategory> ProductCategory { get; set; }
-
 		public DbSet<ShoppingCart> ShoppingCarts { get; set; }
 		public DbSet<Payment> Payments { get; set; }
 
@@ -59,11 +57,6 @@ namespace LearningAPI
 				.WithMany()
 				.HasForeignKey(o => o.PaymentID)
 				.OnDelete(DeleteBehavior.Cascade); // ✅ Orders will be deleted if Payment is deleted
-
-			modelBuilder.Entity<Product>()
-				.HasOne(p => p.ProductCategory)
-				.WithMany(c => c.Products)
-				.HasForeignKey(p => p.ProductCategoryID);
 
 			modelBuilder.Entity<Refund>()
 				.HasOne(r => r.User)
