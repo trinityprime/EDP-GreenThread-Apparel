@@ -1,13 +1,13 @@
 import { useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
-import { Box, Typography, TextField, Button, IconButton, InputAdornment } from "@mui/material";
+import { Box, Typography, TextField, Button, IconButton, InputAdornment, FormHelperText } from "@mui/material";
 import { Visibility, VisibilityOff } from "@mui/icons-material";
-import { ToastContainer, toast } from "react-toastify";
-import "react-toastify/dist/ReactToastify.css";
 
 export default function ResetPassword() {
     const [password, setPassword] = useState("");
     const [confirmPassword, setConfirmPassword] = useState("");
+    const [passwordError, setPasswordError] = useState("");
+    const [confirmPasswordError, setConfirmPasswordError] = useState("");
     const [showPassword, setShowPassword] = useState(false);
     const [showConfirmPassword, setShowConfirmPassword] = useState(false);
     const location = useLocation();
@@ -16,23 +16,25 @@ export default function ResetPassword() {
 
     const validatePassword = (password) => {
         const passwordRegex = /^(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,50}$/;
-        if (!passwordRegex.test(password)) {
-            return "Password must be 8-50 characters, include 1 uppercase letter, 1 number, and 1 special character.";
-        }
-        return null;
+        return passwordRegex.test(password)
+            ? ""
+            : "Password must be 8-50 characters, include 1 uppercase letter, 1 number, and 1 special character.";
+    };
+
+    const handlePasswordChange = (e) => {
+        const value = e.target.value;
+        setPassword(value);
+        setPasswordError(validatePassword(value));
+    };
+
+    const handleConfirmPasswordChange = (e) => {
+        const value = e.target.value;
+        setConfirmPassword(value);
+        setConfirmPasswordError(value !== password ? "Passwords do not match" : "");
     };
 
     const handleResetPassword = async () => {
-        if (password !== confirmPassword) {
-            toast.error("Passwords do not match");
-            return;
-        }
-
-        const validationError = validatePassword(password);
-        if (validationError) {
-            toast.error(validationError);
-            return;
-        }
+        if (passwordError || confirmPasswordError || !password || !confirmPassword) return;
 
         try {
             const response = await fetch("http://localhost:5082/user/reset-password", {
@@ -43,13 +45,12 @@ export default function ResetPassword() {
 
             const data = await response.json();
             if (response.ok) {
-                toast.success("Password reset successful!");
-                setTimeout(() => navigate("/login"), 1000);
+                navigate("/login");
             } else {
-                toast.error(data.message);
+                setPasswordError(data.message);
             }
         } catch (error) {
-            toast.error("Something went wrong. Please try again.");
+            setPasswordError("Something went wrong. Please try again.");
         }
     };
 
@@ -65,9 +66,11 @@ export default function ResetPassword() {
                 type={showPassword ? "text" : "password"}
                 label="New Password"
                 value={password}
-                onChange={(e) => setPassword(e.target.value)}
+                onChange={handlePasswordChange}
                 fullWidth
                 variant="outlined"
+                error={!!passwordError}
+                helperText={passwordError}
                 sx={{ mb: 2 }}
                 InputProps={{
                     endAdornment: (
@@ -83,9 +86,11 @@ export default function ResetPassword() {
                 type={showConfirmPassword ? "text" : "password"}
                 label="Confirm Password"
                 value={confirmPassword}
-                onChange={(e) => setConfirmPassword(e.target.value)}
+                onChange={handleConfirmPasswordChange}
                 fullWidth
                 variant="outlined"
+                error={!!confirmPasswordError}
+                helperText={confirmPasswordError}
                 sx={{ mb: 3 }}
                 InputProps={{
                     endAdornment: (
@@ -102,10 +107,10 @@ export default function ResetPassword() {
                 variant="contained"
                 color="primary"
                 onClick={handleResetPassword}
+                disabled={!!passwordError || !!confirmPasswordError || !password || !confirmPassword}
             >
                 Reset Password
             </Button>
-            <ToastContainer />
         </Box>
     );
 }

@@ -213,7 +213,6 @@ namespace LearningAPI.Controllers
 			return Ok(new { message = "User updated successfully." });
 		}
 
-		// otp reset password
 		[HttpPost("reset-password")]
 		public IActionResult ResetPassword(Models.ResetPasswordRequest request)
 		{
@@ -223,8 +222,11 @@ namespace LearningAPI.Controllers
 				return NotFound(new { message = "User not found." });
 			}
 
-			// Check if the new password matches any of the last 3 passwords
-			if (user.PasswordHistory.Any(oldPassword => BCrypt.Net.BCrypt.Verify(request.Password, oldPassword)))
+			// Include the current password in the history check
+			var passwordHistoryWithCurrent = new List<string>(user.PasswordHistory) { user.Password };
+
+			// Check if the new password matches any of the last 3 (including current)
+			if (passwordHistoryWithCurrent.Any(oldPassword => BCrypt.Net.BCrypt.Verify(request.Password, oldPassword)))
 			{
 				return BadRequest(new { message = "You cannot reuse your last 3 passwords." });
 			}
@@ -232,16 +234,13 @@ namespace LearningAPI.Controllers
 			// Hash the new password
 			string newPasswordHash = BCrypt.Net.BCrypt.HashPassword(request.Password);
 
-			// Update password and password history
+			// Update password
 			user.Password = newPasswordHash;
 			user.UpdatedAt = DateTime.Now;
 
-			// Maintain only the last 3 passwords
-			user.PasswordHistory.Add(newPasswordHash);
-			if (user.PasswordHistory.Count > 3)
-			{
-				user.PasswordHistory.RemoveAt(0);
-			}
+			// Maintain only the last 3 passwords (including the current one before change)
+			passwordHistoryWithCurrent.Add(newPasswordHash);
+			user.PasswordHistory = passwordHistoryWithCurrent.Skip(Math.Max(0, passwordHistoryWithCurrent.Count - 3)).ToList();
 
 			_context.SaveChanges();
 			return Ok(new { message = "Password has been reset successfully." });
