@@ -12,8 +12,8 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace LearningAPI.Migrations
 {
     [DbContext(typeof(MyDbContext))]
-    [Migration("20250206051111_NewDbbbbb")]
-    partial class NewDbbbbb
+    [Migration("20250206051824_JsonIgnore")]
+    partial class JsonIgnore
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
