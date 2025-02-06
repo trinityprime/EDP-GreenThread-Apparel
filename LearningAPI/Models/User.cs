@@ -40,6 +40,7 @@ namespace LearningAPI.Models
 
 		// This is a self-referencing navigation property
 		[ForeignKey("UserID")] // Specify that this collection will reference the UserID property
+		[JsonIgnore]
 		public virtual ICollection<User> Users { get; set; } = new List<User>();
 	}
 }
