@@ -1,111 +1,111 @@
-﻿//using Microsoft.AspNetCore.Mvc;
-//using EDP_API.Models;
-//using System.Linq;
-//using LearningAPI;
+﻿using LearningAPI.Models;
+using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
+using System;
+using System.Linq;
+using System.Threading.Tasks;
 
-//namespace EDP_API.Controllers
-//{
-//    [ApiController]
-//    [Route("[controller]")]
-//    public class DeliveryController : ControllerBase
-//    {
-//        private readonly MyDbContext _context;
+namespace LearningAPI.Controllers
+{
+	[ApiController]
+	[Route("api/[controller]")]
+	public class DeliveryController : ControllerBase
+	{
+		private readonly MyDbContext _context;
 
-//        public DeliveryController(MyDbContext context)
-//        {
-//            _context = context;
-//        }
-//        // GET: /Delivery
-//        [HttpGet]
-//        public IActionResult GetAll()
-//        {
-//            var deliveries = _context.Deliveries
-//                .OrderByDescending(x => x.CreatedAt)
-//                .ToList();
+		public DeliveryController(MyDbContext context)
+		{
+			_context = context;
+		}
 
-//            return Ok(deliveries);
-//        }
+		// 📋 GET All Deliveries
+		[HttpGet]
+		public async Task<IActionResult> GetAllDeliveries()
+		{
+			var deliveries = await _context.Deliveries.ToListAsync();
+			return Ok(deliveries);
+		}
 
-//        // GET: /Delivery/{id}
-//        [HttpGet("{id}")]
-//        public IActionResult GetById(int id)
-//        {
-//            var delivery = _context.Deliveries.FirstOrDefault(x => x.DeliveryID == id);
-//            if (delivery == null)
-//            {
-//                return NotFound(new { Message = $"Delivery with ID {id} not found." });
-//            }
-//            return Ok(delivery);
-//        }
-//        // POST: /Delivery
-//        [HttpPost]
-//        public IActionResult AddDelivery([FromBody] Delivery delivery)
-//        {
-//            // Validate input
-//            if (delivery == null)
-//            {
-//                return BadRequest(new { Message = "Delivery data is required." });
-//            }
+		// 📌 GET Delivery by ID
+		[HttpGet("{id}")]
+		public async Task<IActionResult> GetDeliveryById(int id)
+		{
+			var delivery = await _context.Deliveries.FindAsync(id);
 
-//            if (string.IsNullOrWhiteSpace(delivery.Address))
-//            {
-//                return BadRequest(new { Message = "Delivery address is required." });
-//            }
+			if (delivery == null)
+				return NotFound($"Delivery with ID {id} not found.");
 
-//            var now = DateTime.Now;
+			return Ok(delivery);
+		}
 
-//            var newDelivery = new Delivery
-//            {
-//                OrderID = delivery.OrderID,
-//                Address = delivery.Address.Trim(),
-//                DeliveryStatus = delivery.DeliveryStatus,
-//                CreatedAt = now,
-//                UpdatedAt = now
-//            };
-//            _context.Deliveries.Add(newDelivery);
-//            _context.SaveChanges();
+		// ➕ POST Create a New Delivery
+		[HttpPost]
+		public async Task<IActionResult> CreateDelivery([FromBody] Delivery delivery)
+		{
+			if (delivery == null)
+				return BadRequest("Invalid delivery data.");
 
-//            return CreatedAtAction(nameof(GetById), new { id = newDelivery.DeliveryID }, newDelivery);
-//        }
+			// Check if the Order exists
+			var orderExists = await _context.Orders.AnyAsync(o => o.OrderID == delivery.OrderID);
+			if (!orderExists)
+				return BadRequest("Invalid OrderID. Order does not exist.");
 
-//        // PUT: /Delivery/{id}
-//        [HttpPut("{id}")]
-//        public IActionResult UpdateDelivery(int id, [FromBody] Delivery delivery)
-//        {
-//            if (delivery == null || id != delivery.DeliveryID)
-//            {
-//                return BadRequest(new { Message = "Invalid data or ID mismatch." });
-//            }
+			delivery.CreatedAt = DateTime.UtcNow;
+			delivery.UpdatedAt = DateTime.UtcNow;
 
-//            var existingDelivery = _context.Deliveries.FirstOrDefault(x => x.DeliveryID == id);
-//            if (existingDelivery == null)
-//            {
-//                return NotFound(new { Message = $"Delivery with ID {id} not found." });
-//            }
-//            existingDelivery.OrderID = delivery.OrderID;
-//            existingDelivery.Address = delivery.Address.Trim();
-//            existingDelivery.DeliveryStatus = delivery.DeliveryStatus;
-//            existingDelivery.UpdatedAt = DateTime.Now;
+			_context.Deliveries.Add(delivery);
+			await _context.SaveChangesAsync();
 
-//            _context.SaveChanges();
+			return CreatedAtAction(nameof(GetDeliveryById), new { id = delivery.DeliveryID }, delivery);
+		}
 
-//            return NoContent();
-//        }
+		// 📝 PUT Update Delivery Address
+		[HttpPut("{id}/address")]
+		public async Task<IActionResult> UpdateDeliveryAddress(int id, [FromBody] string newAddress)
+		{
+			var delivery = await _context.Deliveries.FindAsync(id);
+			if (delivery == null)
+				return NotFound("Delivery not found.");
 
-//        // DELETE: /Delivery/{id}
-//        [HttpDelete("{id}")]
-//        public IActionResult DeleteDelivery(int id)
-//        {
-//            var delivery = _context.Deliveries.FirstOrDefault(x => x.DeliveryID == id);
-//            if (delivery == null)
-//            {
-//                return NotFound(new { Message = $"Delivery with ID {id} not found." });
-//            }
+			if (string.IsNullOrWhiteSpace(newAddress) || newAddress.Length > 255)
+				return BadRequest("Invalid address. Ensure it is not empty and within 255 characters.");
 
-//            _context.Deliveries.Remove(delivery);
-//            _context.SaveChanges();
+			delivery.Address = newAddress;
+			delivery.UpdatedAt = DateTime.UtcNow;
 
-//            return NoContent();
-//        }
-//    }
-//}
+			await _context.SaveChangesAsync();
+			return Ok(new { message = "Address updated successfully." });
+		}
+
+		// 🔄 PUT Update Delivery Status
+		[HttpPut("{id}/status")]
+		public async Task<IActionResult> UpdateDeliveryStatus(int id, [FromBody] Delivery.Delivery_Status newStatus)
+		{
+			var delivery = await _context.Deliveries.FindAsync(id);
+			if (delivery == null)
+				return NotFound("Delivery not found.");
+
+			if (!Enum.IsDefined(typeof(Delivery.Delivery_Status), newStatus))
+				return BadRequest("Invalid delivery status.");
+
+			delivery.DeliveryStatus = newStatus;
+			delivery.UpdatedAt = DateTime.UtcNow;
+
+			await _context.SaveChangesAsync();
+			return Ok(new { message = $"Delivery status updated to {newStatus}." });
+		}
+
+		// 🗑️ DELETE Delivery
+		[HttpDelete("{id}")]
+		public async Task<IActionResult> DeleteDelivery(int id)
+		{
+			var delivery = await _context.Deliveries.FindAsync(id);
+			if (delivery == null)
+				return NotFound("Delivery not found.");
+
+			_context.Deliveries.Remove(delivery);
+			await _context.SaveChangesAsync();
+			return NoContent();
+		}
+	}
+}

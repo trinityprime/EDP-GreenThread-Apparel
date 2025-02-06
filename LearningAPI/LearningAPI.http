@@ -136,7 +136,13 @@ Content-Type: application/json
   "productCategoryID": 1
 }
 
+###
 
+GET {{LearningAPI_HostAddress}}/api/product
+Content-Type: application/json
+
+
+###
 
 
 
@@ -159,12 +165,18 @@ Content-Type: application/json
 
 {
   "userID": 1,
-  "productID": 2,
+  "productID": 1,
   "quantity": 20
 }
 
 ###
-POST {{LearningAPI_HostAddress}}/api/shoppingcart/1
+
+GET {{LearningAPI_HostAddress}}/api/shoppingcart/1
+Content-Type: application/json
+
+
+###
+PUT {{LearningAPI_HostAddress}}/api/shoppingcart/1
 Content-Type: application/json
 
 {
@@ -189,6 +201,11 @@ Authorization: Bearer {{token}}
 
 
 ###
+GET {{LearningAPI_HostAddress}}/api/payment
+Content-Type: application/json
+Authorization: Bearer {{token}}
+
+###
 
 
 
@@ -200,8 +217,53 @@ Authorization: Bearer {{token}}
 {
   "userID": 1,
   "paymentID": 1,
-  "grandTotal": 119.96
+  "grandTotal": 1199.60
 }
 
+
+###
+POST {{LearningAPI_HostAddress}}/api/delivery
+Content-Type: application/json
+
+{
+  "orderID": 1,
+  "address": "123 Green Street, New York, NY 10001",
+  "deliveryStatus": "Pending"
+}
+
+###
+
+POST {{LearningAPI_HostAddress}}/api/refund
+Content-Type: application/json
+Authorization: Bearer {{token}}
+
+
+{
+  "orderID": 1,
+  "refundAmount": 50.00
+}
+
+
+###
+
+GET {{LearningAPI_HostAddress}}/api/refund
+
+###
+
+POST {{LearningAPI_HostAddress}}/api/customerservice
+Content-Type: application/json
+
+{
+  "comment": "I received a defective item and need a replacement.",
+  "status": "Pending",
+  "needReply": true,
+  "adminNote": "",
+  "userID": 1
+}
+
+
+###
+
+GET {{LearningAPI_HostAddress}}/api/customerservice
 
 ###

@@ -58,6 +58,78 @@ namespace LearningAPI.Migrations
                     b.ToTable("Admins");
                 });
 
+            modelBuilder.Entity("LearningAPI.Models.CustomerService", b =>
+                {
+                    b.Property<int>("CustomerServiceID")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("CustomerServiceID"));
+
+                    b.Property<string>("AdminNote")
+                        .IsRequired()
+                        .HasMaxLength(1000)
+                        .HasColumnType("nvarchar(1000)");
+
+                    b.Property<string>("Comment")
+                        .IsRequired()
+                        .HasMaxLength(1000)
+                        .HasColumnType("nvarchar(1000)");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime");
+
+                    b.Property<bool>("NeedReply")
+                        .HasColumnType("bit");
+
+                    b.Property<int>("Status")
+                        .HasColumnType("int");
+
+                    b.Property<DateTime>("UpdatedAt")
+                        .HasColumnType("datetime");
+
+                    b.Property<int>("UserID")
+                        .HasColumnType("int");
+
+                    b.HasKey("CustomerServiceID");
+
+                    b.HasIndex("UserID");
+
+                    b.ToTable("CustomerServices");
+                });
+
+            modelBuilder.Entity("LearningAPI.Models.Delivery", b =>
+                {
+                    b.Property<int>("DeliveryID")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("DeliveryID"));
+
+                    b.Property<string>("Address")
+                        .IsRequired()
+                        .HasMaxLength(255)
+                        .HasColumnType("nvarchar(255)");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime");
+
+                    b.Property<int>("DeliveryStatus")
+                        .HasColumnType("int");
+
+                    b.Property<int>("OrderID")
+                        .HasColumnType("int");
+
+                    b.Property<DateTime>("UpdatedAt")
+                        .HasColumnType("datetime");
+
+                    b.HasKey("DeliveryID");
+
+                    b.HasIndex("OrderID");
+
+                    b.ToTable("Deliveries");
+                });
+
             modelBuilder.Entity("LearningAPI.Models.Order", b =>
                 {
                     b.Property<int>("OrderID")
@@ -253,6 +325,38 @@ namespace LearningAPI.Migrations
                     b.ToTable("ProductCategory");
                 });
 
+            modelBuilder.Entity("LearningAPI.Models.Refund", b =>
+                {
+                    b.Property<int>("RefundID")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("RefundID"));
+
+                    b.Property<int>("OrderID")
+                        .HasColumnType("int");
+
+                    b.Property<decimal>("RefundAmount")
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<DateTime>("RefundDate")
+                        .HasColumnType("datetime2");
+
+                    b.Property<int>("RefundStatus")
+                        .HasColumnType("int");
+
+                    b.Property<int>("UserID")
+                        .HasColumnType("int");
+
+                    b.HasKey("RefundID");
+
+                    b.HasIndex("OrderID");
+
+                    b.HasIndex("UserID");
+
+                    b.ToTable("Refunds");
+                });
+
             modelBuilder.Entity("LearningAPI.Models.ShoppingCart", b =>
                 {
                     b.Property<int>("ShoppingCartID")
@@ -353,6 +457,28 @@ namespace LearningAPI.Migrations
                     b.ToTable("Users");
                 });
 
+            modelBuilder.Entity("LearningAPI.Models.CustomerService", b =>
+                {
+                    b.HasOne("LearningAPI.Models.User", "User")
+                        .WithMany()
+                        .HasForeignKey("UserID")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("User");
+                });
+
+            modelBuilder.Entity("LearningAPI.Models.Delivery", b =>
+                {
+                    b.HasOne("LearningAPI.Models.Order", "Order")
+                        .WithMany()
+                        .HasForeignKey("OrderID")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Order");
+                });
+
             modelBuilder.Entity("LearningAPI.Models.Order", b =>
                 {
                     b.HasOne("LearningAPI.Models.Payment", "Payment")
@@ -411,6 +537,25 @@ namespace LearningAPI.Migrations
                         .IsRequired();
 
                     b.Navigation("ProductCategory");
+                });
+
+            modelBuilder.Entity("LearningAPI.Models.Refund", b =>
+                {
+                    b.HasOne("LearningAPI.Models.Order", "Order")
+                        .WithMany()
+                        .HasForeignKey("OrderID")
+                        .OnDelete(DeleteBehavior.NoAction)
+                        .IsRequired();
+
+                    b.HasOne("LearningAPI.Models.User", "User")
+                        .WithMany()
+                        .HasForeignKey("UserID")
+                        .OnDelete(DeleteBehavior.NoAction)
+                        .IsRequired();
+
+                    b.Navigation("Order");
+
+                    b.Navigation("User");
                 });
 
             modelBuilder.Entity("LearningAPI.Models.ShoppingCart", b =>

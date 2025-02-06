@@ -6,7 +6,7 @@ using Microsoft.EntityFrameworkCore.Migrations;
 namespace LearningAPI.Migrations
 {
     /// <inheritdoc />
-    public partial class PasswordHistory : Migration
+    public partial class NewDbbbbb : Migration
     {
         /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)
@@ -93,6 +93,31 @@ namespace LearningAPI.Migrations
                         column: x => x.ProductCategoryID,
                         principalTable: "ProductCategory",
                         principalColumn: "ProductCategoryID",
+                        onDelete: ReferentialAction.Cascade);
+                });
+
+            migrationBuilder.CreateTable(
+                name: "CustomerServices",
+                columns: table => new
+                {
+                    CustomerServiceID = table.Column<int>(type: "int", nullable: false)
+                        .Annotation("SqlServer:Identity", "1, 1"),
+                    Comment = table.Column<string>(type: "nvarchar(1000)", maxLength: 1000, nullable: false),
+                    Status = table.Column<int>(type: "int", nullable: false),
+                    CreatedAt = table.Column<DateTime>(type: "datetime", nullable: false),
+                    UpdatedAt = table.Column<DateTime>(type: "datetime", nullable: false),
+                    NeedReply = table.Column<bool>(type: "bit", nullable: false),
+                    AdminNote = table.Column<string>(type: "nvarchar(1000)", maxLength: 1000, nullable: false),
+                    UserID = table.Column<int>(type: "int", nullable: false)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_CustomerServices", x => x.CustomerServiceID);
+                    table.ForeignKey(
+                        name: "FK_CustomerServices_Users_UserID",
+                        column: x => x.UserID,
+                        principalTable: "Users",
+                        principalColumn: "UserID",
                         onDelete: ReferentialAction.Cascade);
                 });
 
@@ -190,6 +215,29 @@ namespace LearningAPI.Migrations
                 });
 
             migrationBuilder.CreateTable(
+                name: "Deliveries",
+                columns: table => new
+                {
+                    DeliveryID = table.Column<int>(type: "int", nullable: false)
+                        .Annotation("SqlServer:Identity", "1, 1"),
+                    OrderID = table.Column<int>(type: "int", nullable: false),
+                    Address = table.Column<string>(type: "nvarchar(255)", maxLength: 255, nullable: false),
+                    DeliveryStatus = table.Column<int>(type: "int", nullable: false),
+                    CreatedAt = table.Column<DateTime>(type: "datetime", nullable: false),
+                    UpdatedAt = table.Column<DateTime>(type: "datetime", nullable: false)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_Deliveries", x => x.DeliveryID);
+                    table.ForeignKey(
+                        name: "FK_Deliveries_Orders_OrderID",
+                        column: x => x.OrderID,
+                        principalTable: "Orders",
+                        principalColumn: "OrderID",
+                        onDelete: ReferentialAction.Cascade);
+                });
+
+            migrationBuilder.CreateTable(
                 name: "OrderSummaryItem",
                 columns: table => new
                 {
@@ -218,6 +266,43 @@ namespace LearningAPI.Migrations
                         principalColumn: "ProductID",
                         onDelete: ReferentialAction.Cascade);
                 });
+
+            migrationBuilder.CreateTable(
+                name: "Refunds",
+                columns: table => new
+                {
+                    RefundID = table.Column<int>(type: "int", nullable: false)
+                        .Annotation("SqlServer:Identity", "1, 1"),
+                    UserID = table.Column<int>(type: "int", nullable: false),
+                    OrderID = table.Column<int>(type: "int", nullable: false),
+                    RefundAmount = table.Column<decimal>(type: "decimal(18,2)", nullable: false),
+                    RefundDate = table.Column<DateTime>(type: "datetime2", nullable: false),
+                    RefundStatus = table.Column<int>(type: "int", nullable: false)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_Refunds", x => x.RefundID);
+                    table.ForeignKey(
+                        name: "FK_Refunds_Orders_OrderID",
+                        column: x => x.OrderID,
+                        principalTable: "Orders",
+                        principalColumn: "OrderID");
+                    table.ForeignKey(
+                        name: "FK_Refunds_Users_UserID",
+                        column: x => x.UserID,
+                        principalTable: "Users",
+                        principalColumn: "UserID");
+                });
+
+            migrationBuilder.CreateIndex(
+                name: "IX_CustomerServices_UserID",
+                table: "CustomerServices",
+                column: "UserID");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_Deliveries_OrderID",
+                table: "Deliveries",
+                column: "OrderID");
 
             migrationBuilder.CreateIndex(
                 name: "IX_Orders_PaymentID",
@@ -250,6 +335,16 @@ namespace LearningAPI.Migrations
                 column: "ProductCategoryID");
 
             migrationBuilder.CreateIndex(
+                name: "IX_Refunds_OrderID",
+                table: "Refunds",
+                column: "OrderID");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_Refunds_UserID",
+                table: "Refunds",
+                column: "UserID");
+
+            migrationBuilder.CreateIndex(
                 name: "IX_ShoppingCarts_PaymentID",
                 table: "ShoppingCarts",
                 column: "PaymentID");
@@ -272,7 +367,16 @@ namespace LearningAPI.Migrations
                 name: "Admins");
 
             migrationBuilder.DropTable(
+                name: "CustomerServices");
+
+            migrationBuilder.DropTable(
+                name: "Deliveries");
+
+            migrationBuilder.DropTable(
                 name: "OrderSummaryItem");
+
+            migrationBuilder.DropTable(
+                name: "Refunds");
 
             migrationBuilder.DropTable(
                 name: "ShoppingCarts");
