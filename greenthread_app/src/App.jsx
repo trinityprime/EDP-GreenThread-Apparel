@@ -53,6 +53,12 @@ function App() {
                                     <>
                                         <Typography>{user.name}</Typography>
                                         <Button onClick={logout}>Logout</Button>
+
+
+                                        {/* JSX comment*/
+
+                                        }
+
                                     </>
                                 )}
                                 {!user && (
