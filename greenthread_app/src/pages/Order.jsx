@@ -12,16 +12,21 @@ function Orders() {
     const [error, setError] = useState("");
 
     useEffect(() => {
-        if (user) {
+        if (user && user.userID) {
             fetchOrders();
         }
     }, [user]);
 
     const fetchOrders = async () => {
         try {
-            const response = await http.get(`/api/Order/${user.userID}`);
-            setOrders(response.data);
-        } catch {
+            if (!user || !user.userID) {
+                throw new Error("User is not authenticated or userID is missing.");
+            }
+            const response = await http.get(`/api/Order/user-orders/${user.userID}`);
+            console.log("Orders Response:", response.data); // Debug API response
+            setOrders(response.data || []); // Ensure orders is always an array
+        } catch (error) {
+            console.error("Error fetching orders:", error);
             setError("Failed to load orders.");
         } finally {
             setLoading(false);

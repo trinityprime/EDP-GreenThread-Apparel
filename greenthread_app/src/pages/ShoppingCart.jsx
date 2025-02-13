@@ -3,15 +3,16 @@ import { Box, Typography, Button, Table, TableBody, TableCell, TableContainer, T
 import http from "../http";
 import UserContext from "../contexts/UserContext";
 import { ToastContainer, toast } from "react-toastify";
-import { useNavigate } from "react-router-dom"; 
+import { useNavigate } from "react-router-dom";
 import "react-toastify/dist/ReactToastify.css";
 
 function ShoppingCart() {
     const { user } = useContext(UserContext);
-    const [cartItems, setCartItems] = useState([]);
+    const [cartTotal, setCartTotal] = useState(0);
+    const [cartItems, setCartItems] = useState([]); // This will store the cart items
     const navigate = useNavigate();
-    const [loading, setLoading] = useState(true);
-    const [error, setError] = useState("");
+    const [loading, setLoading] = useState(true); // Controls loading state
+    const [error, setError] = useState(""); // Stores error messages
 
     useEffect(() => {
         if (user) {
@@ -23,11 +24,21 @@ function ShoppingCart() {
         try {
             const response = await http.get(`/api/ShoppingCart`);
             const userCartItems = response.data.filter((item) => item.userID === user.userID);
-            setCartItems(userCartItems);
+
+            if (userCartItems.length > 0) {
+                setCartItems(userCartItems); // Update cart items state
+                const total = userCartItems.reduce((acc, item) => acc + item.quantity * item.product.price, 0);
+                setCartTotal(total); // Update total
+            } else {
+                setCartItems([]); // Clear cart items if empty
+                setCartTotal(0);
+                toast.error("Your shopping cart is empty.");
+            }
         } catch (err) {
             setError("Failed to load shopping cart.");
+            console.error(err);
         } finally {
-            setLoading(false);
+            setLoading(false); // Set loading to false after fetching
         }
     };
 
@@ -37,11 +48,11 @@ function ShoppingCart() {
             return;
         }
         try {
-            await http.put(`/api/ShoppingCart/${id}`, newQuantity, {
-                headers: { "Content-Type": "application/json" }
+            await http.put(`/api/ShoppingCart/${id}`, { quantity: newQuantity }, {
+                headers: { "Content-Type": "application/json" },
             });
             toast.success("Quantity updated successfully.");
-            fetchCart();
+            fetchCart(); // Refresh cart after updating quantity
         } catch (err) {
             toast.error("Failed to update quantity.");
         }
@@ -51,30 +62,27 @@ function ShoppingCart() {
         try {
             await http.delete(`/api/ShoppingCart/${id}`);
             toast.success("Item removed successfully.");
-            fetchCart();
+            fetchCart(); // Refresh cart after removing item
         } catch (err) {
             toast.error("Failed to remove item.");
         }
     };
 
     const checkout = async () => {
+        if (cartItems.length === 0) {
+            toast.error("Your cart is empty.");
+            return;
+        }
         try {
-            const response = await http.post(`/api/ShoppingCart/${user.userID}/checkout`, {
-                address: "123 Street, City", // Replace with user input
-                phoneNumber: "1234567890",
-                paymentMethod: "Credit Card"
-            });
-            toast.success(response.data.message);
-            fetchCart();
-
-            navigate("/create-payment")
+            toast.success("Redirecting to payment...");
+            navigate("/create-payment"); // Navigate to payment screen
         } catch (err) {
             toast.error("Checkout failed.");
         }
     };
 
-    if (loading) return <p>Loading...</p>;
-    if (error) return <p className="error">{error}</p>;
+    if (loading) return <Typography>Loading...</Typography>;
+    if (error) return <Typography color="error">{error}</Typography>;
 
     return (
         <Box sx={{ mt: 4, mx: "auto", maxWidth: "800px" }}>
@@ -120,7 +128,7 @@ function ShoppingCart() {
             {cartItems.length > 0 && (
                 <>
                     <Typography variant="h6" sx={{ mt: 2 }}>
-                        Grand Total: ${cartItems.reduce((acc, item) => acc + item.quantity * item.product.price, 0).toFixed(2)}
+                        Grand Total: ${cartTotal.toFixed(2)}
                     </Typography>
                     <Button variant="contained" color="primary" sx={{ mt: 2 }} onClick={checkout}>
                         Checkout

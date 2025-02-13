@@ -15,7 +15,6 @@ function CreatePaymentForm() {
         phoneNumber: "",
         paymentMethod: "Credit Card",
     });
-
     const [shoppingCartID, setShoppingCartID] = useState(null);
     const [cartTotal, setCartTotal] = useState(0);
 
@@ -32,7 +31,10 @@ function CreatePaymentForm() {
 
             if (userCartItems.length > 0) {
                 setShoppingCartID(userCartItems[0].shoppingCartID);
-                setCartTotal(userCartItems.reduce((acc, item) => acc + item.quantity * item.product.price, 0));
+                const total = userCartItems.reduce((acc, item) => acc + item.quantity * item.product.price, 0);
+                setCartTotal(total);
+            } else {
+                toast.error("No items in the shopping cart.");
             }
         } catch {
             toast.error("Failed to load shopping cart.");
@@ -52,18 +54,8 @@ function CreatePaymentForm() {
         }
 
         try {
-            // **Check if payment already exists**
-            const existingPayment = await http.get(`/api/Payment`);
-            const userPayments = existingPayment.data.filter((p) => p.userID === user.userID && p.shoppingCartID === shoppingCartID);
-
-            if (userPayments.length > 0) {
-                toast.info("Payment already exists. Redirecting to orders...");
-                setTimeout(() => navigate("/orders"), 2000);
-                return;
-            }
-
-            // **Proceed with creating the payment**
-            const response = await http.post("/api/Payment", {
+            // Step 1: Create Payment
+            const paymentResponse = await http.post("/api/Payment", {
                 userID: user.userID,
                 shoppingCartID: shoppingCartID,
                 address: paymentDetails.address,
@@ -72,12 +64,19 @@ function CreatePaymentForm() {
                 amountPaid: cartTotal,
             });
 
-            toast.success(`Payment successful! Redirecting to orders...`);
+            // Step 2: Create Order and clear cart
+            const orderResponse = await http.post("/api/Order", {
+                userID: user.userID,
+                paymentID: paymentResponse.data.paymentID,
+            });
+
+            toast.success("Payment successful! Redirecting to orders...");
             setTimeout(() => navigate("/orders"), 2000);
         } catch (error) {
-            if (error.response && error.response.status === 409) {
-                toast.info("Payment already exists. Redirecting to orders...");
-                setTimeout(() => navigate("/orders"), 2000);
+            if (error.response && error.response.status === 400) {
+                toast.error("Payment failed. Please check your details.");
+            } else if (error.response && error.response.status === 409) {
+                toast.error("An order already exists for this payment.");
             } else {
                 toast.error("Payment failed. Please try again.");
             }
@@ -88,11 +87,31 @@ function CreatePaymentForm() {
         <Box sx={{ maxWidth: "600px", mx: "auto", mt: 4, p: 2 }}>
             <Typography variant="h5" sx={{ mb: 2 }}>Enter Payment Details</Typography>
             <form onSubmit={handleSubmit}>
-                <TextField fullWidth label="Address" name="address" value={paymentDetails.address} onChange={handleChange} sx={{ mb: 2 }} required />
-                <TextField fullWidth label="Phone Number" name="phoneNumber" value={paymentDetails.phoneNumber} onChange={handleChange} sx={{ mb: 2 }} required />
+                <TextField
+                    fullWidth
+                    label="Address"
+                    name="address"
+                    value={paymentDetails.address}
+                    onChange={handleChange}
+                    sx={{ mb: 2 }}
+                    required
+                />
+                <TextField
+                    fullWidth
+                    label="Phone Number"
+                    name="phoneNumber"
+                    value={paymentDetails.phoneNumber}
+                    onChange={handleChange}
+                    sx={{ mb: 2 }}
+                    required
+                />
                 <FormControl fullWidth sx={{ mb: 2 }}>
                     <InputLabel>Payment Method</InputLabel>
-                    <Select name="paymentMethod" value={paymentDetails.paymentMethod} onChange={handleChange}>
+                    <Select
+                        name="paymentMethod"
+                        value={paymentDetails.paymentMethod}
+                        onChange={handleChange}
+                    >
                         <MenuItem value="Credit Card">Credit Card</MenuItem>
                         <MenuItem value="PayPal">PayPal</MenuItem>
                         <MenuItem value="Bank Transfer">Bank Transfer</MenuItem>

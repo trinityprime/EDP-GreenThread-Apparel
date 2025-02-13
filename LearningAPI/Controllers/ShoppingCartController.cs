@@ -119,6 +119,23 @@ namespace LearningAPI.Controllers
             return NoContent();
         }
 
+        [HttpDelete("clear-cart/{userId}")]
+        public async Task<IActionResult> ClearCart(int userId)
+        {
+            var cartItems = await _context.ShoppingCarts.Where(c => c.UserID == userId).ToListAsync();
+            if (!cartItems.Any())
+            {
+                return NotFound("No items in the shopping cart to clear.");
+            }
+
+            _context.ShoppingCarts.RemoveRange(cartItems);
+            await _context.SaveChangesAsync();
+
+            return Ok(new { message = "Shopping cart cleared successfully." });
+        }
+
+
+
         // Checkout
         [HttpPost("{userId}/checkout")]
         public async Task<IActionResult> Checkout(int userId, [FromBody] Payment paymentRequest)
