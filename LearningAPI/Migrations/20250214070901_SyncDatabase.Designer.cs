@@ -12,13 +12,8 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace LearningAPI.Migrations
 {
     [DbContext(typeof(MyDbContext))]
-<<<<<<<< HEAD:LearningAPI/Migrations/20250211070206_Integration.Designer.cs
-    [Migration("20250211070206_Integration")]
-    partial class Integration
-========
-    [Migration("20250214064443_initialcreate")]
-    partial class initialcreate
->>>>>>>> a1ae6c0637fea0c90955a6012fe294a8b1116f67:LearningAPI/Migrations/20250214064443_initialcreate.Designer.cs
+    [Migration("20250214070901_SyncDatabase")]
+    partial class SyncDatabase
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
