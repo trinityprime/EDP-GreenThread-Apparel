@@ -26,3 +26,7 @@ dist-ssr
 *.sw?
 
 LearningAPI/Migrations
+
+# Configuration files
+appsettings.json
+appsettings.Development.json
