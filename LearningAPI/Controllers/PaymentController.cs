@@ -27,24 +27,21 @@ namespace LearningAPI.Controllers
             if (!ModelState.IsValid)
                 return BadRequest(ModelState);
 
-            // Ensure user has a shopping cart
+            // Validate ShoppingCartID from the request
             var cartItems = await _context.ShoppingCarts
-                .Where(c => c.UserID == paymentRequest.UserID)
+                .Where(c => c.UserID == paymentRequest.UserID && c.ShoppingCartID == paymentRequest.ShoppingCartID)
                 .Include(c => c.Product)
                 .ToListAsync();
 
             if (!cartItems.Any())
-                return BadRequest("Your shopping cart is empty.");
-
-            // Get first ShoppingCart ID (assuming one cart per user)
-            int shoppingCartID = cartItems.First().ShoppingCartID;
+                return BadRequest("The specified shopping cart is empty or does not exist.");
 
             // Check if a payment already exists for this ShoppingCartID
             var existingPayment = await _context.Payments
-                .FirstOrDefaultAsync(p => p.ShoppingCartID == shoppingCartID);
+                .FirstOrDefaultAsync(p => p.ShoppingCartID == paymentRequest.ShoppingCartID);
 
             if (existingPayment != null)
-                return Conflict("A payment already exists for this cart.");
+                return Conflict($"A payment already exists for ShoppingCartID: {paymentRequest.ShoppingCartID}.");
 
             // Calculate total price from cart items
             decimal grandTotal = cartItems.Sum(c => c.Quantity * c.Product.Price);
@@ -53,7 +50,7 @@ namespace LearningAPI.Controllers
             var newPayment = new Payment
             {
                 UserID = paymentRequest.UserID,
-                ShoppingCartID = shoppingCartID, // Link to shopping cart
+                ShoppingCartID = paymentRequest.ShoppingCartID, // Link to shopping cart
                 Address = paymentRequest.Address,
                 PhoneNumber = paymentRequest.PhoneNumber,
                 PaymentMethod = paymentRequest.PaymentMethod,
@@ -68,6 +65,7 @@ namespace LearningAPI.Controllers
 
             return CreatedAtAction(nameof(GetPaymentById), new { id = newPayment.PaymentID }, newPayment);
         }
+
 
         // 📋 Get All Payments
         [HttpGet, Authorize]

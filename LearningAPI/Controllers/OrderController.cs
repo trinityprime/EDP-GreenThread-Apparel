@@ -17,15 +17,16 @@ namespace LearningAPI.Controllers
             _logger = logger;
         }
 
-        // 📋 GET All Orders
         [HttpGet]
-        public async Task<IActionResult> GetAllOrders()
+        public async Task<IActionResult> GetAllOrders([FromQuery] int page = 1, [FromQuery] int pageSize = 10)
         {
             var orders = await _context.Orders
-                .Include(o => o.User) // Include user details
-                .Include(o => o.Payment) // Include Payment details
-                .Include(o => o.OrderSummaryItems) // Include OrderSummaryItems
-                    .ThenInclude(osi => osi.Product) // Include product details for OrderSummaryItems
+                .Include(o => o.User)
+                .Include(o => o.Payment)
+                .Include(o => o.OrderSummaryItems)
+                    .ThenInclude(osi => osi.Product)
+                .Skip((page - 1) * pageSize)
+                .Take(pageSize)
                 .ToListAsync();
 
             if (!orders.Any())
@@ -34,7 +35,28 @@ namespace LearningAPI.Controllers
             return Ok(orders);
         }
 
-        // 📌 GET Order by ID
+        [HttpGet("user-orders/{userID}")]
+        public async Task<IActionResult> GetUserOrders(int userID, [FromQuery] int page = 1, [FromQuery] int pageSize = 10)
+        {
+            var userExists = await _context.Users.AnyAsync(u => u.UserID == userID);
+            if (!userExists)
+                return BadRequest($"User with ID {userID} does not exist.");
+
+            var orders = await _context.Orders
+                .Where(o => o.UserID == userID)
+                .Include(o => o.Payment)
+                .Include(o => o.OrderSummaryItems)
+                    .ThenInclude(osi => osi.Product)
+                .Skip((page - 1) * pageSize)
+                .Take(pageSize)
+                .ToListAsync();
+
+            if (!orders.Any())
+                return NotFound($"No orders found for user with ID {userID}.");
+
+            return Ok(orders);
+        }
+
         [HttpGet("{id}")]
         public async Task<IActionResult> GetOrderById(int id)
         {
@@ -51,49 +73,61 @@ namespace LearningAPI.Controllers
             return Ok(order);
         }
 
-        // 🛒 POST Create New Order (After Payment)
         [HttpPost]
         public async Task<IActionResult> CreateOrder([FromBody] Order order)
         {
-            try
+            if (order == null || order.OrderSummaryItems == null || !order.OrderSummaryItems.Any())
+                return BadRequest("Invalid order. Ensure JSON format and that at least one item is included.");
+
+            var userExists = await _context.Users.AnyAsync(u => u.UserID == order.UserID);
+            if (!userExists)
+                return BadRequest($"Invalid UserID: {order.UserID}. User does not exist.");
+
+            var payment = await _context.Payments.FindAsync(order.PaymentID);
+            if (payment == null)
+                return BadRequest($"Payment with ID {order.PaymentID} not found.");
+
+            if (order.GrandTotal != payment.AmountPaid)
+                return BadRequest($"GrandTotal ({order.GrandTotal}) must match Payment AmountPaid ({payment.AmountPaid}).");
+
+            var existingOrder = await _context.Orders.FirstOrDefaultAsync(o => o.PaymentID == order.PaymentID);
+            if (existingOrder != null)
+                return Conflict(new
+                {
+                    message = "An order already exists for this payment.",
+                    existingOrderID = existingOrder.OrderID
+                });
+
+            // Create the order
+            order.OrderStatus = OrderStatus.Completed;
+            order.OrderDate = DateTime.UtcNow;
+            order.CreatedAt = DateTime.UtcNow;
+            order.UpdatedAt = DateTime.UtcNow;
+
+            _context.Orders.Add(order);
+
+            // Clear the shopping cart associated with the payment
+            var cartItems = await _context.ShoppingCarts
+                .Where(c => c.ShoppingCartID == payment.ShoppingCartID)
+                .Include(c => c.Product)
+                .ToListAsync();
+
+            if (cartItems.Any())
             {
-                if (order == null)
-                    return BadRequest(new { message = "Invalid request. Check JSON format." });
-
-                // ✅ Check if User exists
-                var userExists = await _context.Users.AnyAsync(u => u.UserID == order.UserID);
-                if (!userExists)
-                    return BadRequest(new { message = $"Invalid UserID: {order.UserID}. User does not exist." });
-
-                // ✅ Check if Payment exists
-                var paymentExists = await _context.Payments.AnyAsync(p => p.PaymentID == order.PaymentID);
-                if (!paymentExists)
-                    return BadRequest(new { message = $"Invalid PaymentID: {order.PaymentID}. Payment does not exist." });
-
-                // ✅ Ensure GrandTotal is correct
-                var payment = await _context.Payments.FindAsync(order.PaymentID);
-                if (order.GrandTotal != payment.AmountPaid)
-                    return BadRequest(new { message = $"GrandTotal must match Payment AmountPaid ({payment.AmountPaid})." });
-
-                // ✅ Save order
-                order.OrderStatus = OrderStatus.Completed; // Order completes after payment
-                order.OrderDate = DateTime.UtcNow;
-                order.CreatedAt = DateTime.UtcNow;
-                order.UpdatedAt = DateTime.UtcNow;
-
-                _context.Orders.Add(order);
-                await _context.SaveChangesAsync();
-
-                return CreatedAtAction(nameof(GetOrderById), new { id = order.OrderID }, order);
+                _context.ShoppingCarts.RemoveRange(cartItems);
             }
-            catch (Exception ex)
+
+            payment.PaymentStatus = PaymentStatus.Completed;
+
+            await _context.SaveChangesAsync();
+
+            return CreatedAtAction(nameof(GetOrderById), new { id = order.OrderID }, new
             {
-                _logger.LogError(ex, "Error creating order");
-                return StatusCode(500, "Internal Server Error");
-            }
+                message = "Order created successfully.",
+                orderID = order.OrderID
+            });
         }
 
-        // 🔄 PUT Update Order Status
         [HttpPut("{id}")]
         public async Task<IActionResult> UpdateOrderStatus(int id, [FromBody] OrderStatus newStatus)
         {
@@ -107,7 +141,6 @@ namespace LearningAPI.Controllers
             return Ok(new { message = $"Order ID {id} status updated to {newStatus}." });
         }
 
-        // 🗑️ DELETE Order (Only if Cancelled)
         [HttpDelete("{id}")]
         public async Task<IActionResult> DeleteOrder(int id)
         {
