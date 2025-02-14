@@ -1,5 +1,5 @@
 import React, { useEffect, useContext, useState } from 'react';
-import { Box, Typography, TextField, Button } from '@mui/material';
+import { Box, Typography, TextField, Button, IconButton, InputAdornment } from '@mui/material';
 import { useNavigate } from 'react-router-dom';
 import { useFormik } from 'formik';
 import * as yup from 'yup';
@@ -7,6 +7,7 @@ import http from '../../http';
 import { ToastContainer, toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 import UserContext from '../../contexts/UserContext';
+import { Visibility, VisibilityOff } from '@mui/icons-material';
 
 // Validation schema for admin registration
 const adminValidationSchema = yup.object({
@@ -31,6 +32,8 @@ function CreateAdminForm() {
     const { user } = useContext(UserContext);
     const navigate = useNavigate();
     const [loading, setLoading] = useState(true); // Loading state
+    const [showPassword, setShowPassword] = useState(false);
+    const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 
     // Redirect non-admin users
     useEffect(() => {
@@ -89,22 +92,50 @@ function CreateAdminForm() {
                 <TextField
                     fullWidth margin="dense" autoComplete="off"
                     label="Password"
-                    name="password" type="password"
+                    name="password"
+                    type={showPassword ? "text" : "password"}
                     value={formik.values.password}
                     onChange={formik.handleChange}
                     onBlur={formik.handleBlur}
                     error={formik.touched.password && Boolean(formik.errors.password)}
                     helperText={formik.touched.password && formik.errors.password}
+                    InputProps={{
+                        endAdornment: (
+                            <InputAdornment position="end">
+                                <IconButton
+                                    aria-label="toggle password visibility"
+                                    onClick={() => setShowPassword(!showPassword)}
+                                    edge="end"
+                                >
+                                    {showPassword ? <VisibilityOff /> : <Visibility />}
+                                </IconButton>
+                            </InputAdornment>
+                        ),
+                    }}
                 />
                 <TextField
                     fullWidth margin="dense" autoComplete="off"
                     label="Confirm Password"
-                    name="confirmPassword" type="password"
+                    name="confirmPassword"
+                    type={showConfirmPassword ? "text" : "password"}
                     value={formik.values.confirmPassword}
                     onChange={formik.handleChange}
                     onBlur={formik.handleBlur}
                     error={formik.touched.confirmPassword && Boolean(formik.errors.confirmPassword)}
                     helperText={formik.touched.confirmPassword && formik.errors.confirmPassword}
+                    InputProps={{
+                        endAdornment: (
+                            <InputAdornment position="end">
+                                <IconButton
+                                    aria-label="toggle confirm password visibility"
+                                    onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                                    edge="end"
+                                >
+                                    {showConfirmPassword ? <VisibilityOff /> : <Visibility />}
+                                </IconButton>
+                            </InputAdornment>
+                        ),
+                    }}
                 />
                 <Box sx={{ mt: 2, display: 'flex', gap: 2 }}>
                     <Button
@@ -124,11 +155,11 @@ function CreateAdminForm() {
                         fullWidth
                         variant="outlined"
                         sx={{
-                            color: 'red', 
-                            borderColor: 'red', 
+                            color: 'red',
+                            borderColor: 'red',
                             '&:hover': {
-                                borderColor: 'darkred', 
-                                color: 'darkred' 
+                                borderColor: 'darkred',
+                                color: 'darkred'
                             }
                         }}
                         onClick={() => navigate('/admin-dashboard')}

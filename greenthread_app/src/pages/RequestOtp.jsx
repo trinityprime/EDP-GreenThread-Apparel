@@ -19,7 +19,7 @@ export default function RequestOtp() {
 
     const handleChange = (e) => {
         setEmail(e.target.value);
-        setEmailError(validateEmail(e.target.value)); // Real-time validation
+        setEmailError(validateEmail(e.target.value));
     };
 
     const handleRequestOtp = async () => {
