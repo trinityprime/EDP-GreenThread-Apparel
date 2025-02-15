@@ -103,6 +103,25 @@ namespace LearningAPI.Controllers
 			return BadRequest("Invalid 2FA code");
 		}
 
+		// In _2FAController.cs
+		[HttpPost("disable")]
+		[Authorize]
+		public IActionResult Disable2FA()
+		{
+			var userEmail = User.FindFirstValue(ClaimTypes.Email);
+			var user = _context.Users.FirstOrDefault(u => u.Email == userEmail);
+			if (user == null) return Unauthorized();
+
+			// Reset 2FA settings
+			user.TwoFactorSecret = null;
+			user.IsTwoFactorEnabled = false;
+			user.RecoveryCodes = new List<string>();
+
+			_context.SaveChanges();
+
+			return Ok(new { Success = true });
+		}
+
 		private string CreateToken(User user)
 		{
 			string? secret = _configuration.GetValue<string>("Authentication:Secret");
