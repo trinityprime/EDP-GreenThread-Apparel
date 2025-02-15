@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
-import { Box, Typography, TextField, Button, IconButton, InputAdornment, FormHelperText } from "@mui/material";
+import { Box, Typography, TextField, Button, IconButton, InputAdornment } from "@mui/material";
 import { Visibility, VisibilityOff } from "@mui/icons-material";
 
 export default function ResetPassword() {

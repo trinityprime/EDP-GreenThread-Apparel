@@ -78,10 +78,22 @@ namespace LearningAPI.Controllers
 				return BadRequest(new { message });
 			}
 
+			// Verify password
 			bool verified = BCrypt.Net.BCrypt.Verify(request.Password, foundUser.Password);
 			if (!verified)
 			{
 				return BadRequest(new { message });
+			}
+
+			// Check if 2FA is required
+			if (foundUser.IsTwoFactorEnabled)
+			{
+				// Return flag to require 2FA (don't return token yet)
+				return Ok(new
+				{
+					Requires2FA = true,
+					Email = foundUser.Email
+				});
 			}
 
 			// Return user info
@@ -94,6 +106,7 @@ namespace LearningAPI.Controllers
 				foundUser.PostalCode,
 				foundUser.Role
 			};
+
 			string accessToken = CreateToken(foundUser);
 			return Ok(new { user, accessToken });
 		}
@@ -149,7 +162,8 @@ namespace LearningAPI.Controllers
 					u.IsDeactivated, // Include deactivation status
 					u.CreatedAt,
 					u.UpdatedAt,
-					u.Role
+					u.Role,
+					u.IsTwoFactorEnabled
 				}).ToList();
 
 			if (users.Count == 0)
@@ -178,7 +192,8 @@ namespace LearningAPI.Controllers
 					u.IsDeactivated, // Include deactivation status
 					u.CreatedAt,
 					u.UpdatedAt,
-					u.Role
+					u.Role,
+					u.IsTwoFactorEnabled
 				}).FirstOrDefault();
 
 			if (user == null)

@@ -6,7 +6,7 @@ using Microsoft.EntityFrameworkCore.Migrations;
 namespace LearningAPI.Migrations
 {
     /// <inheritdoc />
-    public partial class SyncDatabase : Migration
+    public partial class Added2FA : Migration
     {
         /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)
@@ -66,6 +66,9 @@ namespace LearningAPI.Migrations
                     IsDeactivated = table.Column<bool>(type: "bit", nullable: false),
                     OtpCode = table.Column<string>(type: "nvarchar(max)", nullable: true),
                     OtpExpiry = table.Column<DateTime>(type: "datetime2", nullable: true),
+                    TwoFactorSecret = table.Column<string>(type: "nvarchar(max)", nullable: true),
+                    IsTwoFactorEnabled = table.Column<bool>(type: "bit", nullable: false),
+                    RecoveryCodes = table.Column<string>(type: "nvarchar(max)", nullable: false),
                     PasswordHistory = table.Column<string>(type: "nvarchar(max)", nullable: false),
                     CreatedAt = table.Column<DateTime>(type: "datetime", nullable: false),
                     UpdatedAt = table.Column<DateTime>(type: "datetime", nullable: false),

@@ -1,38 +1,26 @@
 import React, { useContext, useState } from "react";
-import { Box, Typography, Button, Dialog, DialogActions, DialogContent, DialogContentText, DialogTitle } from "@mui/material";
+import { Box, Typography, Button, Dialog, DialogActions, DialogContent, DialogContentText, DialogTitle, TextField } from "@mui/material";
 import { useNavigate } from "react-router-dom";
 import axios from "../http";
 import UserContext from "../contexts/UserContext";
+import { QRCodeSVG } from "qrcode.react";
 
 function Profile() {
     const { user, setUser } = useContext(UserContext);
     const [open, setOpen] = useState(false);
+    const [open2FA, setOpen2FA] = useState(false); // For 2FA dialog
+    const [qrData, setQrData] = useState(null); // Stores QR code data
+    const [verificationCode, setVerificationCode] = useState(""); // For 2FA verification
+    const [error, setError] = useState(""); // For error messages
     const navigate = useNavigate();
 
-    const handleUpdateClick = () => {
-        navigate("/update-user");
-    };
-
-    const handleShoppingCartClick = () => {
-        navigate("/shopping-cart");
-    };
-
-    const handleOrdersClick = () => {
-        navigate("/orders");
-    }
-
-    const handleViewProductsClick = () => {
-        navigate("/products");
-    };
-
-    const handleDeactivateClick = () => {
-        setOpen(true);
-    };
-
-    const handleClose = () => {
-        setOpen(false);
-    };
-
+    // Existing functions...
+    const handleUpdateClick = () => navigate("/update-user");
+    const handleShoppingCartClick = () => navigate("/shopping-cart");
+    const handleOrdersClick = () => navigate("/orders");
+    const handleViewProductsClick = () => navigate("/products");
+    const handleDeactivateClick = () => setOpen(true);
+    const handleClose = () => setOpen(false);
     const handleConfirmDeactivate = () => {
         axios.put(`/user/deactivate/${user.userID}`)
             .then(() => {
@@ -42,6 +30,37 @@ function Profile() {
             })
             .catch((error) => {
                 console.error("Error deactivating user:", error);
+            });
+    };
+
+    // Enable 2FA
+    const handleEnable2FA = () => {
+        axios.post("/api/2fa/enable", {}, {
+            headers: { Authorization: `Bearer ${localStorage.getItem("token")}` }
+        })
+            .then((response) => {
+                setQrData(response.data); // Set QR code data
+                setOpen2FA(true); // Open 2FA dialog
+            })
+            .catch((error) => {
+                console.error("Error enabling 2FA:", error);
+                setError("Failed to enable 2FA. Please try again.");
+            });
+    };
+
+    // Verify 2FA setup
+    const handleVerify2FA = () => {
+        axios.post("/api/2fa/verify", { code: verificationCode }, {
+            headers: { Authorization: `Bearer ${localStorage.getItem("token")}` }
+        })
+            .then(() => {
+                setOpen2FA(false); // Close 2FA dialog
+                setError(""); // Clear error
+                alert("2FA has been enabled successfully!");
+            })
+            .catch((error) => {
+                console.error("Error verifying 2FA:", error);
+                setError("Invalid verification code. Please try again.");
             });
     };
 
@@ -75,6 +94,48 @@ function Profile() {
                 Deactivate Account
             </Button>
 
+            {/* Enable 2FA Button */}
+            <Button variant="contained" color="info" sx={{ mt: 2, ml: 2 }} onClick={handleEnable2FA}>
+                Enable 2FA
+            </Button>
+
+            {/* 2FA Setup Dialog */}
+            <Dialog open={open2FA} onClose={() => setOpen2FA(false)}>
+                <DialogTitle>Enable Two-Factor Authentication</DialogTitle>
+                <DialogContent>
+                    <DialogContentText>
+                        Scan the QR code below using Microsoft Authenticator.
+                    </DialogContentText>
+                    {qrData && (
+                        <Box sx={{ textAlign: "center", mt: 2 }}>
+                            <QRCodeSVG value={qrData.qrCodeUri} size={200} />
+                            <Typography variant="body2" sx={{ mt: 2 }}>
+                                Secret: {qrData.secret}
+                            </Typography>
+                        </Box>
+                    )}
+                    <TextField
+                        fullWidth
+                        label="Verification Code"
+                        value={verificationCode}
+                        onChange={(e) => setVerificationCode(e.target.value)}
+                        sx={{ mt: 2 }}
+                    />
+                    {error && (
+                        <Typography color="error" sx={{ mt: 2 }}>
+                            {error}
+                        </Typography>
+                    )}
+                </DialogContent>
+                <DialogActions>
+                    <Button onClick={() => setOpen2FA(false)}>Cancel</Button>
+                    <Button onClick={handleVerify2FA} color="primary">
+                        Verify
+                    </Button>
+                </DialogActions>
+            </Dialog>
+
+            {/* Deactivate Account Dialog */}
             <Dialog
                 open={open}
                 onClose={handleClose}

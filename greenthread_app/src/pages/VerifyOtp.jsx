@@ -7,6 +7,7 @@ import "react-toastify/dist/ReactToastify.css";
 export default function VerifyOtp() {
     const [otp, setOtp] = useState(["", "", "", "", "", ""]);
     const [resendLoading, setResendLoading] = useState(false);
+    const [resendCooldown, setResendCooldown] = useState(0);
     const [attempts, setAttempts] = useState(0);
     const [isBlocked, setIsBlocked] = useState(false);
     const [remainingTime, setRemainingTime] = useState(0);
@@ -40,6 +41,20 @@ export default function VerifyOtp() {
             }, 1000);
         }
     }, [attempts]);
+
+    useEffect(() => {
+        if (resendCooldown > 0) {
+            const interval = setInterval(() => {
+                setResendCooldown((prev) => {
+                    if (prev <= 1) {
+                        clearInterval(interval);
+                        return 0;
+                    }
+                    return prev - 1;
+                });
+            }, 1000);
+        }
+    }, [resendCooldown]);
 
     const handleChange = (index, value) => {
         if (/^[0-9]?$/.test(value)) {
@@ -104,7 +119,12 @@ export default function VerifyOtp() {
     };
 
     const handleResendOtp = async () => {
+        if (resendCooldown > 0) {
+            toast.error(`Please wait ${resendCooldown} seconds before resending.`);
+            return;
+        }
         setResendLoading(true);
+        setResendCooldown(10);
 
         try {
             const response = await fetch("http://localhost:5082/api/otp/request", {
@@ -155,9 +175,9 @@ export default function VerifyOtp() {
                 color="primary"
                 sx={{ mt: 2 }}
                 onClick={handleResendOtp}
-                disabled={resendLoading}
+                disabled={resendLoading || resendCooldown > 0}
             >
-                {resendLoading ? "Resending..." : "Resend OTP"}
+                {resendCooldown > 0 ? `Resend OTP (${resendCooldown}s)` : "Resend OTP"}
             </Button>
             <ToastContainer />
         </Box>
