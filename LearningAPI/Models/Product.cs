@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
+using System.Text.Json.Serialization;
 
 namespace LearningAPI.Models
 {
@@ -25,6 +26,7 @@ namespace LearningAPI.Models
         public int Stock { get; set; }
 
         [Required]
+        [JsonConverter(typeof(JsonStringEnumConverter))]
         public ProductSize Size { get; set; }
 
         [MaxLength(5000)]
@@ -38,6 +40,7 @@ namespace LearningAPI.Models
         public decimal FinalPrice => Price - (Price * (DiscountPercentage / 100));
 
         [Required]
+        [JsonConverter(typeof(JsonStringEnumConverter))]
         public ProductStatus Status { get; set; } = ProductStatus.Active;
 
         [Column(TypeName = "datetime")]
@@ -48,6 +51,8 @@ namespace LearningAPI.Models
 
         // Foreign key property
         [Required]
+        [JsonConverter(typeof(JsonStringEnumConverter))]
+
         public ProductCategory Category { get; set; } // Use Enum Instead of ProductCategoryID
     }
 

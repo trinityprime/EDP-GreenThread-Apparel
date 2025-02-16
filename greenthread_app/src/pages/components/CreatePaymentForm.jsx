@@ -15,73 +15,97 @@ function CreatePaymentForm() {
         phoneNumber: "",
         paymentMethod: "Credit Card",
     });
-    const [shoppingCartID, setShoppingCartID] = useState(null);
+    const [errors, setErrors] = useState({});
+    const [shoppingCart, setShoppingCart] = useState(null);
     const [cartTotal, setCartTotal] = useState(0);
 
     useEffect(() => {
-        if (user) {
-            fetchCart();
-        }
-    }, [user]);
-
-    const fetchCart = async () => {
-        try {
-            const response = await http.get(`/api/ShoppingCart`);
-            const userCartItems = response.data.filter((item) => item.userID === user.userID);
-
-            if (userCartItems.length > 0) {
-                setShoppingCartID(userCartItems[0].shoppingCartID);
-                const total = userCartItems.reduce((acc, item) => acc + item.quantity * item.product.price, 0);
-                setCartTotal(total);
-            } else {
-                toast.error("No items in the shopping cart.");
+        const fetchShoppingCart = async () => {
+            try {
+                const response = await http.get(`/api/ShoppingCart/${user?.userID}`);
+                setShoppingCart(response.data);
+                setCartTotal(
+                    response.data.reduce((acc, item) => acc + item.grandTotal, 0)
+                );
+            } catch (err) {
+                console.error("Error fetching shopping cart:", err);
+                toast.error("Failed to fetch shopping cart. Please try again.");
+                navigate("/shopping-cart");
             }
-        } catch {
-            toast.error("Failed to load shopping cart.");
+        };
+
+        if (user) {
+            fetchShoppingCart();
         }
-    };
+    }, [user, navigate]);
+
 
     const handleChange = (e) => {
         setPaymentDetails({ ...paymentDetails, [e.target.name]: e.target.value });
+        setErrors({ ...errors, [e.target.name]: "" });
     };
 
+    const validateFields = () => {
+        const { address, phoneNumber } = paymentDetails;
+        const newErrors = {};
+
+        if (!phoneNumber || !/^\d{8,15}$/.test(phoneNumber)) {
+            newErrors.phoneNumber = "Phone number must be between 8 to 15 digits.";
+        }
+
+        if (!address || address.trim().length < 3) {
+            newErrors.address = "Address must be more than 3 characters.";
+        }
+
+        setErrors(newErrors);
+        return Object.keys(newErrors).length === 0;
+    };
+
+    // In CreatePaymentForm.js
     const handleSubmit = async (e) => {
         e.preventDefault();
 
-        if (!paymentDetails.address || !paymentDetails.phoneNumber) {
-            toast.error("Please fill in all required fields.");
-            return;
-        }
+        if (!validateFields()) return;
 
         try {
-            // Step 1: Create Payment
-            const paymentResponse = await http.post("/api/Payment", {
-                userID: user.userID,
-                shoppingCartID: shoppingCartID,
+            const paymentData = {
+                userID: user?.userID, // Make sure this matches exactly (case sensitive)
                 address: paymentDetails.address,
                 phoneNumber: paymentDetails.phoneNumber,
                 paymentMethod: paymentDetails.paymentMethod,
-                amountPaid: cartTotal,
-            });
+            };
 
-            // Step 2: Create Order and clear cart
-            const orderResponse = await http.post("/api/Order", {
-                userID: user.userID,
-                paymentID: paymentResponse.data.paymentID,
-            });
+            console.log('Sending payment data:', paymentData); // Debug log
 
-            toast.success("Payment successful! Redirecting to orders...");
-            setTimeout(() => navigate("/orders"), 2000);
-        } catch (error) {
-            if (error.response && error.response.status === 400) {
-                toast.error("Payment failed. Please check your details.");
-            } else if (error.response && error.response.status === 409) {
-                toast.error("An order already exists for this payment.");
+            const response = await http.post("/api/Payment/checkout", paymentData);
+            console.log('Payment and order response:', response.data); // Debug log
+
+            if (response.data.message === "Payment and order created successfully.") {
+                toast.success("Payment and order created successfully! Redirecting to orders...");
+
+                // Clear cart data
+                localStorage.removeItem("cartSummary");
+
+                // Add slight delay before redirect
+                setTimeout(() => {
+                    navigate("/orders");
+                }, 1500);
             } else {
-                toast.error("Payment failed. Please try again.");
+                toast.error("Failed to create order. Please try again.");
             }
+        } catch (error) {
+            console.error("Payment Error:", error.response?.data);
+            toast.error(error.response?.data?.message || "Payment failed. Please try again later.");
         }
     };
+
+    if (!user || !shoppingCart) {
+        return (
+            <Box sx={{ mt: 4, mx: "auto", maxWidth: "600px", textAlign: "center" }}>
+                <Typography variant="h5">Loading...</Typography>
+            </Box>
+        );
+    }
 
     return (
         <Box sx={{ maxWidth: "600px", mx: "auto", mt: 4, p: 2 }}>
@@ -95,6 +119,8 @@ function CreatePaymentForm() {
                     onChange={handleChange}
                     sx={{ mb: 2 }}
                     required
+                    error={!!errors.address}
+                    helperText={errors.address}
                 />
                 <TextField
                     fullWidth
@@ -104,6 +130,8 @@ function CreatePaymentForm() {
                     onChange={handleChange}
                     sx={{ mb: 2 }}
                     required
+                    error={!!errors.phoneNumber}
+                    helperText={errors.phoneNumber}
                 />
                 <FormControl fullWidth sx={{ mb: 2 }}>
                     <InputLabel>Payment Method</InputLabel>
@@ -120,7 +148,18 @@ function CreatePaymentForm() {
 
                 <Typography variant="h6" sx={{ mb: 2 }}>Grand Total: ${cartTotal.toFixed(2)}</Typography>
 
-                <Button fullWidth type="submit" variant="contained" color="primary">Proceed to Payment</Button>
+                <Button fullWidth type="submit" variant="contained" color="primary" sx={{ mb: 2 }}>
+                    Proceed to Payment
+                </Button>
+
+                <Button
+                    fullWidth
+                    variant="outlined"
+                    color="secondary"
+                    onClick={() => navigate("/shopping-cart")}
+                >
+                    Back to Shopping Cart
+                </Button>
             </form>
             <ToastContainer />
         </Box>

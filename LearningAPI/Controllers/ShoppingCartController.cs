@@ -18,19 +18,34 @@ namespace LearningAPI.Controllers
             _context = context;
         }
 
-        // 📋 GET All Shopping Cart Items
-        [HttpGet]
-        public async Task<IActionResult> GetAll()
+        // 📋 GET All Shopping Cart Items for a User
+        [HttpGet("{userId}")]
+        public async Task<IActionResult> GetCartByUser(int userId)
         {
             try
             {
-                var shoppingCarts = await _context.ShoppingCarts
-                    .Include(c => c.Product)
-                    .Include(c => c.User)
-                    .OrderByDescending(x => x.CreatedAt)
-                    .ToListAsync();
+                var cart = await _context.ShoppingCarts
+                    .Include(c => c.ShoppingCartItems)
+                    .ThenInclude(i => i.Product)
+                    .FirstOrDefaultAsync(c => c.UserID == userId);
 
-                return Ok(shoppingCarts);
+                if (cart == null || !cart.ShoppingCartItems.Any())
+                    return NotFound("Shopping cart is either empty or does not exist.");
+
+                var result = cart.ShoppingCartItems.Select(item => new
+                {
+                    item.ShoppingCartItemID,
+                    item.ProductID,
+                    ProductName = item.Product.ProductName,
+                    ProductPrice = item.Product.Price,
+                    Discount = item.Product.DiscountPercentage,
+                    item.Quantity,
+                    GrandTotal = item.GrandTotal,
+                    item.CreatedAt,
+                    item.UpdatedAt
+                });
+
+                return Ok(result);
             }
             catch (Exception ex)
             {
@@ -38,141 +53,161 @@ namespace LearningAPI.Controllers
             }
         }
 
-        // 📌 GET Shopping Cart by ID
-        [HttpGet("{id}")]
-        public async Task<IActionResult> GetById(int id)
-        {
-            var shoppingCart = await _context.ShoppingCarts
-                .Include(c => c.Product)
-                .Include(c => c.User)
-                .FirstOrDefaultAsync(x => x.ShoppingCartID == id);
-
-            if (shoppingCart == null)
-                return NotFound($"Shopping cart with ID {id} not found.");
-
-            return Ok(shoppingCart);
-        }
-
         // ➕ POST Add Product to Shopping Cart
         [HttpPost]
-        public async Task<IActionResult> AddToCart([FromBody] ShoppingCart shoppingCart)
+        public async Task<IActionResult> AddToCart([FromBody] AddToCartRequest request)
         {
+            int userID = request.UserID;
+            int productID = request.ProductID;
+            int quantity = request.Quantity;
+
+            // Validate user existence
+            var userExists = await _context.Users.AnyAsync(u => u.UserID == userID);
+            if (!userExists) return BadRequest("Invalid UserID. User does not exist.");
+
+            // Validate product existence
+            var product = await _context.Products.FindAsync(productID);
+            if (product == null) return BadRequest("Invalid ProductID. Product does not exist.");
+
+            // Calculate discounted price
+            decimal discountedPrice = product.Price * (1 - product.DiscountPercentage / 100);
+
+            // Fetch or create shopping cart for the user
+            var shoppingCart = await _context.ShoppingCarts
+                .Include(c => c.ShoppingCartItems)
+                .FirstOrDefaultAsync(c => c.UserID == userID);
+
             if (shoppingCart == null)
-                return BadRequest("ShoppingCart data is required.");
-
-            var userExists = await _context.Users.AnyAsync(u => u.UserID == shoppingCart.UserID);
-            if (!userExists)
-                return BadRequest("Invalid UserID. User does not exist.");
-
-            var product = await _context.Products.FindAsync(shoppingCart.ProductID);
-            if (product == null)
-                return BadRequest("Invalid ProductID. Product does not exist.");
-
-            // Prevent ShoppingCartID from being set manually
-            var newShoppingCart = new ShoppingCart
             {
-                UserID = shoppingCart.UserID,
-                ProductID = shoppingCart.ProductID,
-                Quantity = shoppingCart.Quantity,
-                GrandTotal = shoppingCart.Quantity * product.Price,
-                CreatedAt = DateTime.UtcNow,
-                UpdatedAt = DateTime.UtcNow
-            };
+                shoppingCart = new ShoppingCart
+                {
+                    UserID = userID,
+                    CreatedAt = DateTime.UtcNow,
+                    UpdatedAt = DateTime.UtcNow,
+                    ShoppingCartItems = new List<ShoppingCartItem>()
+                };
+                _context.ShoppingCarts.Add(shoppingCart);
+                await _context.SaveChangesAsync(); // Save to generate ShoppingCartID
+            }
 
-            _context.ShoppingCarts.Add(newShoppingCart);
+            // Check if the product is already in the cart
+            var existingCartItem = shoppingCart.ShoppingCartItems
+                .FirstOrDefault(c => c.ProductID == productID);
+
+            if (existingCartItem != null)
+            {
+                existingCartItem.Quantity += quantity;
+                existingCartItem.GrandTotal = existingCartItem.Quantity * discountedPrice;
+                existingCartItem.UpdatedAt = DateTime.UtcNow;
+            }
+            else
+            {
+                var newCartItem = new ShoppingCartItem
+                {
+                    ShoppingCartID = shoppingCart.ShoppingCartID,
+                    ProductID = productID,
+                    Quantity = quantity,
+                    GrandTotal = quantity * discountedPrice,
+                    CreatedAt = DateTime.UtcNow,
+                    UpdatedAt = DateTime.UtcNow
+                };
+                shoppingCart.ShoppingCartItems.Add(newCartItem);
+            }
+
+            shoppingCart.UpdatedAt = DateTime.UtcNow;
+
             await _context.SaveChangesAsync();
 
-            return CreatedAtAction(nameof(GetById), new { id = newShoppingCart.ShoppingCartID }, newShoppingCart);
+            return Ok(new
+            {
+                message = "Product added or updated in the cart.",
+                cartItems = shoppingCart.ShoppingCartItems.Select(i => new
+                {
+                    i.ProductID,
+                    i.Quantity,
+                    i.GrandTotal
+                }).ToList()
+            });
         }
 
 
-        // 🔄 PUT Update Quantity in Shopping Cart
-        [HttpPut("{id}")]
-        public async Task<IActionResult> UpdateQuantity(int id, [FromBody] int newQuantity)
+        // 🔄 PUT Update Quantity in Shopping Cart Item
+        [HttpPut("{userId}/item/{itemId}")]
+        public async Task<IActionResult> UpdateQuantity(int itemId, [FromBody] ShoppingCartUpdateRequest request)
         {
-            if (newQuantity < 1)
+            if (request.Quantity < 1)
                 return BadRequest("Quantity must be at least 1.");
 
-            var cartItem = await _context.ShoppingCarts.Include(c => c.Product).FirstOrDefaultAsync(c => c.ShoppingCartID == id);
+            var cartItem = await _context.ShoppingCartItems
+                .Include(i => i.Product)
+                .FirstOrDefaultAsync(i => i.ShoppingCartItemID == itemId);
+
             if (cartItem == null)
                 return NotFound("Shopping cart item not found.");
 
-            // Update quantity and total price
-            cartItem.UpdateQuantity(newQuantity, cartItem.Product.Price);
+            Console.WriteLine($"Updating item: {itemId}, New Quantity: {request.Quantity}");
+
+            decimal discountedPrice = cartItem.Product.Price * (1 - (cartItem.Product.DiscountPercentage / 100));
+
+            cartItem.Quantity = request.Quantity;
+            cartItem.GrandTotal = cartItem.Quantity * discountedPrice;
             cartItem.UpdatedAt = DateTime.UtcNow;
 
             await _context.SaveChangesAsync();
             return Ok(cartItem);
         }
 
-        // 🗑️ DELETE Remove Product from Shopping Cart
-        [HttpDelete("{id}")]
-        public async Task<IActionResult> DeleteFromCart(int id)
-        {
-            var cartItem = await _context.ShoppingCarts.FindAsync(id);
-            if (cartItem == null)
-                return NotFound($"Shopping cart item with ID {id} not found.");
 
-            _context.ShoppingCarts.Remove(cartItem);
+        // 🗑️ DELETE Remove Item from Shopping Cart
+        [HttpDelete("{userId}/item/{itemId}")]
+        public async Task<IActionResult> DeleteFromCart(int itemId)
+        {
+            var cartItem = await _context.ShoppingCartItems.FindAsync(itemId);
+            if (cartItem == null)
+            {
+                Console.WriteLine($"No cart item found for itemId: {itemId}");
+                return NotFound($"Shopping cart item with ID {itemId} not found.");
+            }
+
+            Console.WriteLine($"Deleting cart item: {itemId}");
+
+            _context.ShoppingCartItems.Remove(cartItem);
             await _context.SaveChangesAsync();
 
             return NoContent();
         }
 
+
+        // 🗑️ DELETE Clear Entire Cart
         [HttpDelete("clear-cart/{userId}")]
         public async Task<IActionResult> ClearCart(int userId)
         {
-            var cartItems = await _context.ShoppingCarts.Where(c => c.UserID == userId).ToListAsync();
-            if (!cartItems.Any())
-            {
+            var cart = await _context.ShoppingCarts
+                .Include(c => c.ShoppingCartItems)
+                .FirstOrDefaultAsync(c => c.UserID == userId);
+
+            if (cart == null || !cart.ShoppingCartItems.Any())
                 return NotFound("No items in the shopping cart to clear.");
-            }
 
-            _context.ShoppingCarts.RemoveRange(cartItems);
+            int removedItems = cart.ShoppingCartItems.Count;
+
+            _context.ShoppingCartItems.RemoveRange(cart.ShoppingCartItems);
+            _context.ShoppingCarts.Remove(cart);
+
             await _context.SaveChangesAsync();
-
-            return Ok(new { message = "Shopping cart cleared successfully." });
+            return Ok(new { message = $"Shopping cart cleared successfully. {removedItems} item(s) removed." });
         }
 
-
-
-        // Checkout
-        [HttpPost("{userId}/checkout")]
-        public async Task<IActionResult> Checkout(int userId, [FromBody] Payment paymentRequest)
+        public class ShoppingCartUpdateRequest
         {
-            var cartItems = await _context.ShoppingCarts
-                .Where(c => c.UserID == userId)
-                .Include(c => c.Product)
-                .ToListAsync();
-
-            if (!cartItems.Any())
-                return BadRequest("Your shopping cart is empty.");
-
-            // Get the first cart item to store its ID (assuming 1 cart per user)
-            int shoppingCartID = cartItems.First().ShoppingCartID;
-
-            // Calculate Grand Total
-            decimal grandTotal = cartItems.Sum(c => c.Quantity * c.Product.Price);
-
-            // Create a new Payment with "Pending" status
-            var newPayment = new Payment
-            {
-                UserID = userId,
-                ShoppingCartID = shoppingCartID, // Save which cart is being paid for
-                Address = paymentRequest.Address,
-                PhoneNumber = paymentRequest.PhoneNumber,
-                PaymentMethod = paymentRequest.PaymentMethod,
-                AmountPaid = grandTotal, // Must match GrandTotal
-                PaymentStatus = PaymentStatus.Pending,
-                CreatedAt = DateTime.UtcNow,
-                UpdatedAt = DateTime.UtcNow
-            };
-
-            _context.Payments.Add(newPayment);
-            await _context.SaveChangesAsync();
-
-            return Ok(new { message = "Payment initiated. Proceed to complete payment.", PaymentID = newPayment.PaymentID });
+            public int Quantity { get; set; }
         }
 
+        public class AddToCartRequest
+        {
+            public int UserID { get; set; }
+            public int ProductID { get; set; }
+            public int Quantity { get; set; }
+        }
     }
 }

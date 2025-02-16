@@ -6,7 +6,7 @@ using Microsoft.EntityFrameworkCore.Migrations;
 namespace LearningAPI.Migrations
 {
     /// <inheritdoc />
-    public partial class Integration : Migration
+    public partial class initialcreate : Migration
     {
         /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)
@@ -102,13 +102,35 @@ namespace LearningAPI.Migrations
                 });
 
             migrationBuilder.CreateTable(
+                name: "ShoppingCarts",
+                columns: table => new
+                {
+                    ShoppingCartID = table.Column<int>(type: "int", nullable: false)
+                        .Annotation("SqlServer:Identity", "1, 1"),
+                    UserID = table.Column<int>(type: "int", nullable: false),
+                    CreatedAt = table.Column<DateTime>(type: "datetime2", nullable: false),
+                    UpdatedAt = table.Column<DateTime>(type: "datetime2", nullable: false),
+                    IsActive = table.Column<bool>(type: "bit", nullable: false)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_ShoppingCarts", x => x.ShoppingCartID);
+                    table.ForeignKey(
+                        name: "FK_ShoppingCarts_Users_UserID",
+                        column: x => x.UserID,
+                        principalTable: "Users",
+                        principalColumn: "UserID",
+                        onDelete: ReferentialAction.Cascade);
+                });
+
+            migrationBuilder.CreateTable(
                 name: "Payments",
                 columns: table => new
                 {
                     PaymentID = table.Column<int>(type: "int", nullable: false)
                         .Annotation("SqlServer:Identity", "1, 1"),
                     UserID = table.Column<int>(type: "int", nullable: false),
-                    ShoppingCartID = table.Column<int>(type: "int", nullable: false),
+                    ShoppingCartID = table.Column<int>(type: "int", nullable: true),
                     Address = table.Column<string>(type: "nvarchar(250)", maxLength: 250, nullable: false),
                     PhoneNumber = table.Column<string>(type: "nvarchar(15)", maxLength: 15, nullable: false),
                     PaymentMethod = table.Column<string>(type: "nvarchar(50)", maxLength: 50, nullable: false),
@@ -121,10 +143,46 @@ namespace LearningAPI.Migrations
                 {
                     table.PrimaryKey("PK_Payments", x => x.PaymentID);
                     table.ForeignKey(
+                        name: "FK_Payments_ShoppingCarts_ShoppingCartID",
+                        column: x => x.ShoppingCartID,
+                        principalTable: "ShoppingCarts",
+                        principalColumn: "ShoppingCartID",
+                        onDelete: ReferentialAction.SetNull);
+                    table.ForeignKey(
                         name: "FK_Payments_Users_UserID",
                         column: x => x.UserID,
                         principalTable: "Users",
                         principalColumn: "UserID",
+                        onDelete: ReferentialAction.Restrict);
+                });
+
+            migrationBuilder.CreateTable(
+                name: "ShoppingCartItems",
+                columns: table => new
+                {
+                    ShoppingCartItemID = table.Column<int>(type: "int", nullable: false)
+                        .Annotation("SqlServer:Identity", "1, 1"),
+                    ShoppingCartID = table.Column<int>(type: "int", nullable: false),
+                    ProductID = table.Column<int>(type: "int", nullable: false),
+                    Quantity = table.Column<int>(type: "int", nullable: false),
+                    GrandTotal = table.Column<decimal>(type: "decimal(10,2)", nullable: false),
+                    CreatedAt = table.Column<DateTime>(type: "datetime2", nullable: false),
+                    UpdatedAt = table.Column<DateTime>(type: "datetime2", nullable: false)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_ShoppingCartItems", x => x.ShoppingCartItemID);
+                    table.ForeignKey(
+                        name: "FK_ShoppingCartItems_Products_ProductID",
+                        column: x => x.ProductID,
+                        principalTable: "Products",
+                        principalColumn: "ProductID",
+                        onDelete: ReferentialAction.Cascade);
+                    table.ForeignKey(
+                        name: "FK_ShoppingCartItems_ShoppingCarts_ShoppingCartID",
+                        column: x => x.ShoppingCartID,
+                        principalTable: "ShoppingCarts",
+                        principalColumn: "ShoppingCartID",
                         onDelete: ReferentialAction.Cascade);
                 });
 
@@ -136,6 +194,7 @@ namespace LearningAPI.Migrations
                         .Annotation("SqlServer:Identity", "1, 1"),
                     UserID = table.Column<int>(type: "int", nullable: false),
                     PaymentID = table.Column<int>(type: "int", nullable: false),
+                    ShoppingCartID = table.Column<int>(type: "int", nullable: false),
                     OrderDate = table.Column<DateTime>(type: "datetime2", nullable: false),
                     OrderStatus = table.Column<int>(type: "int", nullable: false),
                     GrandTotal = table.Column<decimal>(type: "decimal(10,2)", nullable: false),
@@ -152,46 +211,16 @@ namespace LearningAPI.Migrations
                         principalColumn: "PaymentID",
                         onDelete: ReferentialAction.Cascade);
                     table.ForeignKey(
+                        name: "FK_Orders_ShoppingCarts_ShoppingCartID",
+                        column: x => x.ShoppingCartID,
+                        principalTable: "ShoppingCarts",
+                        principalColumn: "ShoppingCartID",
+                        onDelete: ReferentialAction.Restrict);
+                    table.ForeignKey(
                         name: "FK_Orders_Users_UserID",
                         column: x => x.UserID,
                         principalTable: "Users",
                         principalColumn: "UserID");
-                });
-
-            migrationBuilder.CreateTable(
-                name: "ShoppingCarts",
-                columns: table => new
-                {
-                    ShoppingCartID = table.Column<int>(type: "int", nullable: false)
-                        .Annotation("SqlServer:Identity", "1, 1"),
-                    UserID = table.Column<int>(type: "int", nullable: false),
-                    ProductID = table.Column<int>(type: "int", nullable: false),
-                    Quantity = table.Column<int>(type: "int", nullable: false),
-                    GrandTotal = table.Column<decimal>(type: "decimal(18,2)", nullable: false),
-                    CreatedAt = table.Column<DateTime>(type: "datetime", nullable: false),
-                    UpdatedAt = table.Column<DateTime>(type: "datetime", nullable: false),
-                    PaymentID = table.Column<int>(type: "int", nullable: true)
-                },
-                constraints: table =>
-                {
-                    table.PrimaryKey("PK_ShoppingCarts", x => x.ShoppingCartID);
-                    table.ForeignKey(
-                        name: "FK_ShoppingCarts_Payments_PaymentID",
-                        column: x => x.PaymentID,
-                        principalTable: "Payments",
-                        principalColumn: "PaymentID");
-                    table.ForeignKey(
-                        name: "FK_ShoppingCarts_Products_ProductID",
-                        column: x => x.ProductID,
-                        principalTable: "Products",
-                        principalColumn: "ProductID",
-                        onDelete: ReferentialAction.Cascade);
-                    table.ForeignKey(
-                        name: "FK_ShoppingCarts_Users_UserID",
-                        column: x => x.UserID,
-                        principalTable: "Users",
-                        principalColumn: "UserID",
-                        onDelete: ReferentialAction.Cascade);
                 });
 
             migrationBuilder.CreateTable(
@@ -218,32 +247,28 @@ namespace LearningAPI.Migrations
                 });
 
             migrationBuilder.CreateTable(
-                name: "OrderSummaryItem",
+                name: "OrderItem",
                 columns: table => new
                 {
-                    OrderSummaryItemID = table.Column<int>(type: "int", nullable: false)
+                    OrderItemID = table.Column<int>(type: "int", nullable: false)
                         .Annotation("SqlServer:Identity", "1, 1"),
                     OrderID = table.Column<int>(type: "int", nullable: false),
-                    ProductID = table.Column<int>(type: "int", nullable: false),
+                    ProductName = table.Column<string>(type: "nvarchar(max)", nullable: false),
+                    Price = table.Column<decimal>(type: "decimal(10,2)", nullable: false),
                     Quantity = table.Column<int>(type: "int", nullable: false),
-                    PriceAtPurchase = table.Column<decimal>(type: "decimal(10,2)", nullable: false),
+                    Total = table.Column<decimal>(type: "decimal(10,2)", nullable: false),
                     CreatedAt = table.Column<DateTime>(type: "datetime2", nullable: false),
-                    UpdatedAt = table.Column<DateTime>(type: "datetime2", nullable: false)
+                    UpdatedAt = table.Column<DateTime>(type: "datetime2", nullable: false),
+                    DiscountPercentage = table.Column<decimal>(type: "decimal(18,2)", nullable: false)
                 },
                 constraints: table =>
                 {
-                    table.PrimaryKey("PK_OrderSummaryItem", x => x.OrderSummaryItemID);
+                    table.PrimaryKey("PK_OrderItem", x => x.OrderItemID);
                     table.ForeignKey(
-                        name: "FK_OrderSummaryItem_Orders_OrderID",
+                        name: "FK_OrderItem_Orders_OrderID",
                         column: x => x.OrderID,
                         principalTable: "Orders",
                         principalColumn: "OrderID",
-                        onDelete: ReferentialAction.Cascade);
-                    table.ForeignKey(
-                        name: "FK_OrderSummaryItem_Products_ProductID",
-                        column: x => x.ProductID,
-                        principalTable: "Products",
-                        principalColumn: "ProductID",
                         onDelete: ReferentialAction.Cascade);
                 });
 
@@ -285,9 +310,19 @@ namespace LearningAPI.Migrations
                 column: "OrderID");
 
             migrationBuilder.CreateIndex(
+                name: "IX_OrderItem_OrderID",
+                table: "OrderItem",
+                column: "OrderID");
+
+            migrationBuilder.CreateIndex(
                 name: "IX_Orders_PaymentID",
                 table: "Orders",
                 column: "PaymentID");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_Orders_ShoppingCartID",
+                table: "Orders",
+                column: "ShoppingCartID");
 
             migrationBuilder.CreateIndex(
                 name: "IX_Orders_UserID",
@@ -295,14 +330,9 @@ namespace LearningAPI.Migrations
                 column: "UserID");
 
             migrationBuilder.CreateIndex(
-                name: "IX_OrderSummaryItem_OrderID",
-                table: "OrderSummaryItem",
-                column: "OrderID");
-
-            migrationBuilder.CreateIndex(
-                name: "IX_OrderSummaryItem_ProductID",
-                table: "OrderSummaryItem",
-                column: "ProductID");
+                name: "IX_Payments_ShoppingCartID",
+                table: "Payments",
+                column: "ShoppingCartID");
 
             migrationBuilder.CreateIndex(
                 name: "IX_Payments_UserID",
@@ -320,14 +350,14 @@ namespace LearningAPI.Migrations
                 column: "UserID");
 
             migrationBuilder.CreateIndex(
-                name: "IX_ShoppingCarts_PaymentID",
-                table: "ShoppingCarts",
-                column: "PaymentID");
+                name: "IX_ShoppingCartItems_ProductID",
+                table: "ShoppingCartItems",
+                column: "ProductID");
 
             migrationBuilder.CreateIndex(
-                name: "IX_ShoppingCarts_ProductID",
-                table: "ShoppingCarts",
-                column: "ProductID");
+                name: "IX_ShoppingCartItems_ShoppingCartID",
+                table: "ShoppingCartItems",
+                column: "ShoppingCartID");
 
             migrationBuilder.CreateIndex(
                 name: "IX_ShoppingCarts_UserID",
@@ -348,13 +378,13 @@ namespace LearningAPI.Migrations
                 name: "Deliveries");
 
             migrationBuilder.DropTable(
-                name: "OrderSummaryItem");
+                name: "OrderItem");
 
             migrationBuilder.DropTable(
                 name: "Refunds");
 
             migrationBuilder.DropTable(
-                name: "ShoppingCarts");
+                name: "ShoppingCartItems");
 
             migrationBuilder.DropTable(
                 name: "Orders");
@@ -364,6 +394,9 @@ namespace LearningAPI.Migrations
 
             migrationBuilder.DropTable(
                 name: "Payments");
+
+            migrationBuilder.DropTable(
+                name: "ShoppingCarts");
 
             migrationBuilder.DropTable(
                 name: "Users");

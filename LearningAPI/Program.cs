@@ -19,7 +19,8 @@ builder.Services.AddControllers()
         options.JsonSerializerOptions.Converters.Add(new JsonStringEnumConverter());
         options.JsonSerializerOptions.PropertyNameCaseInsensitive = true;
     }); builder.Services.AddDbContext<MyDbContext>();
-builder.Services.AddAutoMapper(typeof(Program)); // Registers AutoMapper
+builder.Services.AddAutoMapper(typeof(Program));
+builder.Services.AddLogging();
 
 // Add CORS policy
 var allowedOrigins = builder.Configuration.GetSection("AllowedOrigins").Get<string[]>();

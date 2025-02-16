@@ -1,11 +1,11 @@
 ﻿using Microsoft.AspNetCore.Mvc;
-using Microsoft.AspNetCore.Authorization;
 using Microsoft.EntityFrameworkCore;
-using System.Linq;
-using System.Threading.Tasks;
-using System.Collections.Generic;
 using LearningAPI.Models;
-using LearningAPI;
+using System;
+using System.Linq;
+using System.Text.RegularExpressions;
+using System.Threading.Tasks;
+using static LearningAPI.Controllers.OrderController;
 
 namespace LearningAPI.Controllers
 {
@@ -14,211 +14,335 @@ namespace LearningAPI.Controllers
     public class PaymentController : ControllerBase
     {
         private readonly MyDbContext _context;
+        private readonly ILogger<PaymentController> _logger;
 
-        public PaymentController(MyDbContext context)
+        public PaymentController(MyDbContext context, ILogger<PaymentController> logger)
         {
             _context = context;
+            _logger = logger;
         }
 
         // 🛒 Create Payment for Shopping Cart
-        [HttpPost, Authorize]
-        public async Task<IActionResult> CreatePayment(Payment paymentRequest)
+        [HttpPost]
+        public async Task<IActionResult> CreatePayment([FromBody] Payment paymentRequest)
+        {
+            try
+            {
+                _logger.LogInformation($"Starting payment creation for UserID: {paymentRequest.UserID}");
+
+                var shoppingCart = await _context.ShoppingCarts
+                    .Include(c => c.ShoppingCartItems)
+                    .ThenInclude(i => i.Product)
+                    .FirstOrDefaultAsync(c => c.UserID == paymentRequest.UserID);
+
+                if (shoppingCart == null || !shoppingCart.ShoppingCartItems.Any())
+                {
+                    _logger.LogError($"Shopping cart does not exist for UserID: {paymentRequest.UserID}");
+                    return BadRequest("The shopping cart is empty or does not exist.");
+                }
+
+                decimal grandTotal = shoppingCart.ShoppingCartItems.Sum(i =>
+                    i.Quantity * (i.Product.Price * (1 - i.Product.DiscountPercentage / 100)));
+                _logger.LogInformation($"Calculated GrandTotal for UserID {paymentRequest.UserID}: {grandTotal}");
+
+                var newPayment = new Payment
+                {
+                    UserID = paymentRequest.UserID,
+                    ShoppingCartID = shoppingCart.ShoppingCartID,
+                    Address = paymentRequest.Address.Trim(),
+                    PhoneNumber = paymentRequest.PhoneNumber.Trim(),
+                    PaymentMethod = paymentRequest.PaymentMethod.Trim(),
+                    AmountPaid = grandTotal,
+                    PaymentStatus = PaymentStatus.Completed,
+                    CreatedAt = DateTime.UtcNow,
+                    UpdatedAt = DateTime.UtcNow
+                };
+
+                _context.Payments.Add(newPayment);
+                await _context.SaveChangesAsync();
+                _logger.LogInformation($"Payment created successfully. PaymentID: {newPayment.PaymentID}");
+
+                return Ok(new
+                {
+                    message = "Payment created successfully.",
+                    paymentID = newPayment.PaymentID,
+                    amountPaid = grandTotal
+                });
+            }
+
+
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error creating payment");
+                return StatusCode(500, $"An error occurred while creating the payment: {ex.Message}");
+            }
+        }
+
+        // 📋 Get All Payments
+        [HttpGet]
+        public async Task<IActionResult> GetAllPayments()
+        {
+            try
+            {
+                var payments = await _context.Payments
+                    .Include(p => p.User)
+                    .Include(p => p.ShoppingCart)
+                    .ThenInclude(c => c.ShoppingCartItems)
+                    .ThenInclude(i => i.Product)
+                    .ToListAsync();
+
+                var result = payments.Select(p => new
+                {
+                    p.PaymentID,
+                    p.UserID,
+                    User = new { p.User.FirstName, p.User.LastName },
+                    p.ShoppingCartID,
+                    CartItems = p.ShoppingCart.ShoppingCartItems.Select(i => new
+                    {
+                        i.Product.ProductName,
+                        i.Quantity,
+                        i.GrandTotal
+                    }),
+                    p.Address,
+                    p.PhoneNumber,
+                    p.PaymentMethod,
+                    p.AmountPaid,
+                    PaymentStatus = p.PaymentStatus.ToString(),
+                    p.CreatedAt,
+                    p.UpdatedAt
+                });
+
+                return Ok(result);
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, $"An error occurred while retrieving the payments: {ex.Message}");
+            }
+        }
+
+        [HttpPost("checkout")]
+        public async Task<IActionResult> Checkout([FromBody] PaymentRequest paymentRequest)
         {
             if (!ModelState.IsValid)
                 return BadRequest(ModelState);
 
-            // Validate ShoppingCartID from the request
-            var cartItems = await _context.ShoppingCarts
-                .Where(c => c.UserID == paymentRequest.UserID && c.ShoppingCartID == paymentRequest.ShoppingCartID)
-                .Include(c => c.Product)
-                .ToListAsync();
+            if (paymentRequest.UserID <= 0)
+                return BadRequest("Invalid UserID.");
 
-            if (!cartItems.Any())
-                return BadRequest("The specified shopping cart is empty or does not exist.");
-
-            // Check if a payment already exists for this ShoppingCartID
-            var existingPayment = await _context.Payments
-                .FirstOrDefaultAsync(p => p.ShoppingCartID == paymentRequest.ShoppingCartID);
-
-            if (existingPayment != null)
-                return Conflict($"A payment already exists for ShoppingCartID: {paymentRequest.ShoppingCartID}.");
-
-            // Calculate total price from cart items
-            decimal grandTotal = cartItems.Sum(c => c.Quantity * c.Product.Price);
-
-            // Create new Payment
-            var newPayment = new Payment
+            try
             {
-                UserID = paymentRequest.UserID,
-                ShoppingCartID = paymentRequest.ShoppingCartID, // Link to shopping cart
-                Address = paymentRequest.Address,
-                PhoneNumber = paymentRequest.PhoneNumber,
-                PaymentMethod = paymentRequest.PaymentMethod,
-                AmountPaid = grandTotal, // Ensure AmountPaid matches ShoppingCart GrandTotal
-                PaymentStatus = PaymentStatus.Pending, // Default to Pending
-                CreatedAt = DateTime.UtcNow,
-                UpdatedAt = DateTime.UtcNow
-            };
+                _logger.LogInformation($"Fetching shopping cart for UserID: {paymentRequest.UserID}");
+                var shoppingCart = await _context.ShoppingCarts
+                    .Include(c => c.ShoppingCartItems)
+                    .ThenInclude(i => i.Product)
+                    .FirstOrDefaultAsync(c => c.UserID == paymentRequest.UserID);
 
-            _context.Payments.Add(newPayment);
-            await _context.SaveChangesAsync();
-
-            return CreatedAtAction(nameof(GetPaymentById), new { id = newPayment.PaymentID }, newPayment);
-        }
-
-
-        // 📋 Get All Payments
-        [HttpGet, Authorize]
-        public async Task<IActionResult> GetAllPayments()
-        {
-            var payments = await _context.Payments
-                .Include(p => p.User)
-                .Include(p => p.ShoppingCart)
-                .ToListAsync();
-
-            var result = payments.Select(p => new
-            {
-                p.PaymentID,
-                p.UserID,
-                User = new { p.User.FirstName, p.User.LastName },
-                p.ShoppingCartID,
-                CartItems = _context.ShoppingCarts
-                    .Where(c => c.ShoppingCartID == p.ShoppingCartID)
-                    .Select(c => new
-                    {
-                        c.Product.ProductName,
-                        c.Quantity,
-                        c.Product.Price
-                    }).ToList(),
-                p.Address,
-                p.PhoneNumber,
-                p.PaymentMethod,
-                p.AmountPaid,
-                PaymentStatus = p.PaymentStatus.ToString()
-            });
-
-            return Ok(result);
-        }
-
-        // 🔍 Get Payment by ID
-        [HttpGet("{id}"), Authorize]
-        public async Task<IActionResult> GetPaymentById(int id)
-        {
-            var payment = await _context.Payments
-                .Include(p => p.User)
-                .Include(p => p.ShoppingCart)
-                .SingleOrDefaultAsync(p => p.PaymentID == id);
-
-            if (payment == null)
-                return NotFound();
-
-            var data = new
-            {
-                payment.PaymentID,
-                payment.UserID,
-                User = new { payment.User.FirstName, payment.User.LastName },
-                payment.ShoppingCartID,
-                CartItems = _context.ShoppingCarts
-                    .Where(c => c.ShoppingCartID == payment.ShoppingCartID)
-                    .Select(c => new
-                    {
-                        c.Product.ProductName,
-                        c.Quantity,
-                        c.Product.Price
-                    }).ToList(),
-                payment.Address,
-                payment.PhoneNumber,
-                payment.PaymentMethod,
-                payment.AmountPaid,
-                PaymentStatus = payment.PaymentStatus.ToString()
-            };
-
-            return Ok(data);
-        }
-
-        // 💰 Confirm Payment (Change Status → Create Order)
-        [HttpPut("confirm-payment/{paymentId}"), Authorize]
-        public async Task<IActionResult> ConfirmPayment(int paymentId)
-        {
-            var payment = await _context.Payments.FindAsync(paymentId);
-            if (payment == null)
-                return NotFound("Payment not found.");
-
-            if (payment.PaymentStatus == PaymentStatus.Completed)
-                return BadRequest("Payment is already completed.");
-
-            // Update Payment Status
-            payment.PaymentStatus = PaymentStatus.Completed;
-            payment.UpdatedAt = DateTime.UtcNow;
-
-            // Retrieve Shopping Cart Items
-            var cartItems = await _context.ShoppingCarts
-                .Where(c => c.ShoppingCartID == payment.ShoppingCartID)
-                .Include(c => c.Product)
-                .ToListAsync();
-
-            if (!cartItems.Any())
-                return BadRequest("No items found in cart for this user.");
-
-            // Calculate Grand Total (ensure accuracy)
-            decimal grandTotal = cartItems.Sum(c => c.Quantity * c.Product.Price);
-
-            // ✅ Create Order from Shopping Cart
-            var newOrder = new Order
-            {
-                UserID = payment.UserID,
-                OrderDate = DateTime.UtcNow,
-                GrandTotal = grandTotal,
-                OrderStatus = OrderStatus.Completed, // Payment is done, order is confirmed
-                OrderSummaryItems = cartItems.Select(c => new OrderSummaryItem
+                if (shoppingCart == null || !shoppingCart.ShoppingCartItems.Any())
                 {
-                    ProductID = c.ProductID,
-                    Quantity = c.Quantity,
-                    PriceAtPurchase = c.Product.Price
-                }).ToList()
-            };
+                    _logger.LogWarning($"No shopping cart found with items for UserID: {paymentRequest.UserID}");
+                    return BadRequest("No items in the shopping cart. Please add items before proceeding to checkout.");
+                }
 
-            _context.Orders.Add(newOrder);
 
-            // 🗑️ Clear Shopping Cart
-            _context.ShoppingCarts.RemoveRange(cartItems);
+                // Rest of the payment and order creation logic
+                decimal grandTotal = shoppingCart.ShoppingCartItems.Sum(i =>
+                    i.Quantity * (i.Product.Price * (1 - i.Product.DiscountPercentage / 100)));
 
-            await _context.SaveChangesAsync();
-            return Ok(new { message = "Payment successful, Order created!", OrderID = newOrder.OrderID });
+                var newPayment = new Payment
+                {
+                    UserID = paymentRequest.UserID,
+                    ShoppingCartID = shoppingCart.ShoppingCartID,
+                    Address = paymentRequest.Address.Trim(),
+                    PhoneNumber = paymentRequest.PhoneNumber.Trim(),
+                    PaymentMethod = paymentRequest.PaymentMethod.Trim(),
+                    AmountPaid = grandTotal,
+                    PaymentStatus = PaymentStatus.Completed,
+                    CreatedAt = DateTime.UtcNow,
+                    UpdatedAt = DateTime.UtcNow
+                };
+
+                _context.Payments.Add(newPayment);
+                await _context.SaveChangesAsync();
+
+                var newOrder = new Order
+                {
+                    UserID = paymentRequest.UserID,
+                    PaymentID = newPayment.PaymentID,
+                    ShoppingCartID = shoppingCart.ShoppingCartID,
+                    OrderDate = DateTime.UtcNow,
+                    GrandTotal = grandTotal,
+                    OrderStatus = OrderStatus.Pending,
+                    CreatedAt = DateTime.UtcNow,
+                    UpdatedAt = DateTime.UtcNow,
+                    OrderItems = shoppingCart.ShoppingCartItems.Select(cartItem => new OrderItem
+                    {
+                        ProductName = cartItem.Product.ProductName,
+                        Price = cartItem.Product.Price,
+                        Quantity = cartItem.Quantity,
+                        DiscountPercentage = cartItem.Product.DiscountPercentage, // Add this field
+                        Total = cartItem.Quantity * (cartItem.Product.Price * (1 - cartItem.Product.DiscountPercentage / 100)),
+                        CreatedAt = DateTime.UtcNow,
+                        UpdatedAt = DateTime.UtcNow
+                    }).ToList()
+                };
+
+                _context.Orders.Add(newOrder);
+
+                // Clear shopping cart items and mark cart as inactive
+                shoppingCart.IsActive = false;
+                _context.ShoppingCartItems.RemoveRange(shoppingCart.ShoppingCartItems);
+
+                await _context.SaveChangesAsync();
+
+
+                return Ok(new
+                {
+                    message = "Payment and order created successfully.",
+                    paymentID = newPayment.PaymentID,
+                    orderID = newOrder.OrderID,
+                    amountPaid = grandTotal
+                });
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error during checkout");
+                return StatusCode(500, "An error occurred during checkout.");
+            }
+        }
+
+
+        public class PaymentRequest
+        {
+            public int UserID { get; set; }
+            public string Address { get; set; }
+            public string PhoneNumber { get; set; }
+            public string PaymentMethod { get; set; }
+        }
+
+        [HttpGet("user-payments/{userID}")]
+        public async Task<IActionResult> GetPaymentsByUserID(int userID)
+        {
+            try
+            {
+                // Check if the user exists
+                var user = await _context.Users.FirstOrDefaultAsync(u => u.UserID == userID);
+                if (user == null)
+                {
+                    return NotFound("User not found.");
+                }
+
+                // Retrieve payments for the user
+                var payments = await _context.Payments
+                    .Where(p => p.UserID == userID)
+                    .ToListAsync();
+
+                if (!payments.Any())
+                {
+                    return NotFound("No payments found for this user.");
+                }
+
+                // Project the payments into a simplified result
+                var result = payments.Select(p => new
+                {
+                    p.PaymentID,
+                    p.UserID,
+                    User = new { user.FirstName, user.LastName }, // Include user details
+                    p.Address,
+                    p.PhoneNumber,
+                    p.PaymentMethod,
+                    p.AmountPaid,
+                    PaymentStatus = p.PaymentStatus.ToString(),
+                    p.CreatedAt,
+                    p.UpdatedAt
+                });
+
+                return Ok(result);
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, $"An error occurred while retrieving the payments: {ex.Message}");
+            }
         }
 
         // ✏️ Update Payment
-        [HttpPut("{id}"), Authorize]
-        public async Task<IActionResult> UpdatePayment(int id, Payment payment)
+        [HttpPut("{paymentId}")]
+        public async Task<IActionResult> UpdatePayment(int paymentId, [FromBody] PaymentUpdateRequest request)
         {
-            if (!ModelState.IsValid)
-                return BadRequest(ModelState);
+            if (request == null)
+            {
+                return BadRequest("Request body is missing.");
+            }
 
-            var existingPayment = await _context.Payments.FindAsync(id);
-            if (existingPayment == null)
-                return NotFound();
+            var payment = await _context.Payments.FindAsync(paymentId);
+            if (payment == null)
+            {
+                return NotFound("Payment not found.");
+            }
 
-            existingPayment.Address = payment.Address.Trim();
-            existingPayment.PhoneNumber = payment.PhoneNumber.Trim();
-            existingPayment.PaymentMethod = payment.PaymentMethod.Trim();
-            existingPayment.PaymentStatus = payment.PaymentStatus;
-            existingPayment.UpdatedAt = DateTime.UtcNow;
+            // Update payment status if provided
+            if (!string.IsNullOrWhiteSpace(request.PaymentStatus))
+            {
+                if (!Enum.TryParse<PaymentStatus>(request.PaymentStatus, true, out var status))
+                {
+                    return BadRequest("Invalid payment status.");
+                }
+                payment.PaymentStatus = status;
+            }
+
+            payment.UpdatedAt = DateTime.UtcNow;
 
             await _context.SaveChangesAsync();
-            return Ok(new { message = $"Payment ID {id} updated successfully." });
+
+            return Ok(new { message = "Payment updated successfully." });
         }
 
-        // 🗑️ Delete Payment
-        [HttpDelete("{id}"), Authorize]
-        public async Task<IActionResult> DeletePayment(int id)
+        // DTO class for update request
+        public class PaymentUpdateRequest
         {
-            var payment = await _context.Payments.FindAsync(id);
-            if (payment == null)
-                return NotFound();
+            public string PaymentStatus { get; set; }
+        }
 
-            _context.Payments.Remove(payment);
-            await _context.SaveChangesAsync();
-            return NoContent();
+
+
+        // 🗑️ Delete Payment
+        [HttpDelete("{paymentId}")]
+        public async Task<IActionResult> DeletePayment(int paymentId)
+        {
+            try
+            {
+                _logger.LogInformation($"Attempting to delete payment with ID: {paymentId}");
+
+                // Check if the payment exists
+                var payment = await _context.Payments
+                    .FirstOrDefaultAsync(p => p.PaymentID == paymentId);
+
+                if (payment == null)
+                {
+                    _logger.LogWarning($"Payment with ID {paymentId} not found.");
+                    return NotFound("Payment not found.");
+                }
+
+                // Check if an order exists for the given payment
+                var linkedOrder = await _context.Orders.FirstOrDefaultAsync(o => o.PaymentID == paymentId);
+                if (linkedOrder != null)
+                {
+                    _logger.LogWarning($"Payment ID {paymentId} is associated with Order ID {linkedOrder.OrderID}. Cannot delete.");
+                    return BadRequest($"Cannot delete Payment ID {paymentId} because it is associated with Order ID {linkedOrder.OrderID}. Please delete the Order first.");
+                }
+
+                // If no order exists, delete the payment
+                _logger.LogInformation($"Deleting Payment ID: {paymentId}");
+                _context.Payments.Remove(payment);
+                await _context.SaveChangesAsync();
+
+                _logger.LogInformation($"Payment ID {paymentId} deleted successfully.");
+                return Ok(new { message = $"Payment ID {paymentId} deleted successfully." });
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, $"An error occurred while deleting payment with ID {paymentId}");
+                return StatusCode(500, $"An error occurred while deleting the payment: {ex.Message}");
+            }
         }
     }
 }

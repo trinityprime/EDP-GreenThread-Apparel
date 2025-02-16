@@ -12,13 +12,8 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace LearningAPI.Migrations
 {
     [DbContext(typeof(MyDbContext))]
-<<<<<<<< HEAD:LearningAPI/Migrations/20250211070206_Integration.Designer.cs
-    [Migration("20250211070206_Integration")]
-    partial class Integration
-========
-    [Migration("20250214064443_initialcreate")]
+    [Migration("20250216063141_initialcreate")]
     partial class initialcreate
->>>>>>>> a1ae6c0637fea0c90955a6012fe294a8b1116f67:LearningAPI/Migrations/20250214064443_initialcreate.Designer.cs
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
@@ -161,6 +156,9 @@ namespace LearningAPI.Migrations
                     b.Property<int>("PaymentID")
                         .HasColumnType("int");
 
+                    b.Property<int>("ShoppingCartID")
+                        .HasColumnType("int");
+
                     b.Property<DateTime>("UpdatedAt")
                         .HasColumnType("datetime2");
 
@@ -171,44 +169,51 @@ namespace LearningAPI.Migrations
 
                     b.HasIndex("PaymentID");
 
+                    b.HasIndex("ShoppingCartID");
+
                     b.HasIndex("UserID");
 
                     b.ToTable("Orders");
                 });
 
-            modelBuilder.Entity("LearningAPI.Models.OrderSummaryItem", b =>
+            modelBuilder.Entity("LearningAPI.Models.OrderItem", b =>
                 {
-                    b.Property<int>("OrderSummaryItemID")
+                    b.Property<int>("OrderItemID")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("int");
 
-                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("OrderSummaryItemID"));
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("OrderItemID"));
 
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("datetime2");
 
+                    b.Property<decimal>("DiscountPercentage")
+                        .HasColumnType("decimal(18,2)");
+
                     b.Property<int>("OrderID")
                         .HasColumnType("int");
 
-                    b.Property<decimal>("PriceAtPurchase")
+                    b.Property<decimal>("Price")
                         .HasColumnType("decimal(10,2)");
 
-                    b.Property<int>("ProductID")
-                        .HasColumnType("int");
+                    b.Property<string>("ProductName")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
 
                     b.Property<int>("Quantity")
                         .HasColumnType("int");
 
+                    b.Property<decimal>("Total")
+                        .HasColumnType("decimal(10,2)");
+
                     b.Property<DateTime>("UpdatedAt")
                         .HasColumnType("datetime2");
 
-                    b.HasKey("OrderSummaryItemID");
+                    b.HasKey("OrderItemID");
 
                     b.HasIndex("OrderID");
 
-                    b.HasIndex("ProductID");
-
-                    b.ToTable("OrderSummaryItem");
+                    b.ToTable("OrderItem");
                 });
 
             modelBuilder.Entity("LearningAPI.Models.Payment", b =>
@@ -243,7 +248,7 @@ namespace LearningAPI.Migrations
                         .HasMaxLength(15)
                         .HasColumnType("nvarchar(15)");
 
-                    b.Property<int>("ShoppingCartID")
+                    b.Property<int?>("ShoppingCartID")
                         .HasColumnType("int");
 
                     b.Property<DateTime>("UpdatedAt")
@@ -253,6 +258,8 @@ namespace LearningAPI.Migrations
                         .HasColumnType("int");
 
                     b.HasKey("PaymentID");
+
+                    b.HasIndex("ShoppingCartID");
 
                     b.HasIndex("UserID");
 
@@ -351,13 +358,37 @@ namespace LearningAPI.Migrations
                     SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("ShoppingCartID"));
 
                     b.Property<DateTime>("CreatedAt")
-                        .HasColumnType("datetime");
+                        .HasColumnType("datetime2");
+
+                    b.Property<bool>("IsActive")
+                        .HasColumnType("bit");
+
+                    b.Property<DateTime>("UpdatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<int>("UserID")
+                        .HasColumnType("int");
+
+                    b.HasKey("ShoppingCartID");
+
+                    b.HasIndex("UserID");
+
+                    b.ToTable("ShoppingCarts");
+                });
+
+            modelBuilder.Entity("LearningAPI.Models.ShoppingCartItem", b =>
+                {
+                    b.Property<int>("ShoppingCartItemID")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("ShoppingCartItemID"));
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
 
                     b.Property<decimal>("GrandTotal")
-                        .HasColumnType("decimal(18,2)");
-
-                    b.Property<int?>("PaymentID")
-                        .HasColumnType("int");
+                        .HasColumnType("decimal(10,2)");
 
                     b.Property<int>("ProductID")
                         .HasColumnType("int");
@@ -365,21 +396,19 @@ namespace LearningAPI.Migrations
                     b.Property<int>("Quantity")
                         .HasColumnType("int");
 
-                    b.Property<DateTime>("UpdatedAt")
-                        .HasColumnType("datetime");
-
-                    b.Property<int>("UserID")
+                    b.Property<int>("ShoppingCartID")
                         .HasColumnType("int");
 
-                    b.HasKey("ShoppingCartID");
+                    b.Property<DateTime>("UpdatedAt")
+                        .HasColumnType("datetime2");
 
-                    b.HasIndex("PaymentID");
+                    b.HasKey("ShoppingCartItemID");
 
                     b.HasIndex("ProductID");
 
-                    b.HasIndex("UserID");
+                    b.HasIndex("ShoppingCartID");
 
-                    b.ToTable("ShoppingCarts");
+                    b.ToTable("ShoppingCartItems");
                 });
 
             modelBuilder.Entity("LearningAPI.Models.User", b =>
@@ -472,6 +501,12 @@ namespace LearningAPI.Migrations
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
+                    b.HasOne("LearningAPI.Models.ShoppingCart", "ShoppingCart")
+                        .WithMany()
+                        .HasForeignKey("ShoppingCartID")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
                     b.HasOne("LearningAPI.Models.User", "User")
                         .WithMany()
                         .HasForeignKey("UserID")
@@ -480,35 +515,36 @@ namespace LearningAPI.Migrations
 
                     b.Navigation("Payment");
 
+                    b.Navigation("ShoppingCart");
+
                     b.Navigation("User");
                 });
 
-            modelBuilder.Entity("LearningAPI.Models.OrderSummaryItem", b =>
+            modelBuilder.Entity("LearningAPI.Models.OrderItem", b =>
                 {
                     b.HasOne("LearningAPI.Models.Order", "Order")
-                        .WithMany("OrderSummaryItems")
+                        .WithMany("OrderItems")
                         .HasForeignKey("OrderID")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
-                    b.HasOne("LearningAPI.Models.Product", "Product")
-                        .WithMany()
-                        .HasForeignKey("ProductID")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
                     b.Navigation("Order");
-
-                    b.Navigation("Product");
                 });
 
             modelBuilder.Entity("LearningAPI.Models.Payment", b =>
                 {
+                    b.HasOne("LearningAPI.Models.ShoppingCart", "ShoppingCart")
+                        .WithMany()
+                        .HasForeignKey("ShoppingCartID")
+                        .OnDelete(DeleteBehavior.SetNull);
+
                     b.HasOne("LearningAPI.Models.User", "User")
                         .WithMany()
                         .HasForeignKey("UserID")
-                        .OnDelete(DeleteBehavior.Cascade)
+                        .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
+
+                    b.Navigation("ShoppingCart");
 
                     b.Navigation("User");
                 });
@@ -534,25 +570,32 @@ namespace LearningAPI.Migrations
 
             modelBuilder.Entity("LearningAPI.Models.ShoppingCart", b =>
                 {
-                    b.HasOne("LearningAPI.Models.Payment", null)
-                        .WithMany("ShoppingCart")
-                        .HasForeignKey("PaymentID");
-
-                    b.HasOne("LearningAPI.Models.Product", "Product")
-                        .WithMany()
-                        .HasForeignKey("ProductID")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
                     b.HasOne("LearningAPI.Models.User", "User")
                         .WithMany()
                         .HasForeignKey("UserID")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
+                    b.Navigation("User");
+                });
+
+            modelBuilder.Entity("LearningAPI.Models.ShoppingCartItem", b =>
+                {
+                    b.HasOne("LearningAPI.Models.Product", "Product")
+                        .WithMany()
+                        .HasForeignKey("ProductID")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("LearningAPI.Models.ShoppingCart", "ShoppingCart")
+                        .WithMany("ShoppingCartItems")
+                        .HasForeignKey("ShoppingCartID")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
                     b.Navigation("Product");
 
-                    b.Navigation("User");
+                    b.Navigation("ShoppingCart");
                 });
 
             modelBuilder.Entity("LearningAPI.Models.User", b =>
@@ -566,12 +609,12 @@ namespace LearningAPI.Migrations
 
             modelBuilder.Entity("LearningAPI.Models.Order", b =>
                 {
-                    b.Navigation("OrderSummaryItems");
+                    b.Navigation("OrderItems");
                 });
 
-            modelBuilder.Entity("LearningAPI.Models.Payment", b =>
+            modelBuilder.Entity("LearningAPI.Models.ShoppingCart", b =>
                 {
-                    b.Navigation("ShoppingCart");
+                    b.Navigation("ShoppingCartItems");
                 });
 
             modelBuilder.Entity("LearningAPI.Models.User", b =>

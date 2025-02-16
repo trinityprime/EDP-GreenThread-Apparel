@@ -1,4 +1,5 @@
 import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { Box, Typography, TextField, Button, Grid } from "@mui/material";
 import { ToastContainer, toast } from "react-toastify";
@@ -6,13 +7,56 @@ import "react-toastify/dist/ReactToastify.css";
 
 export default function VerifyOtp() {
     const [otp, setOtp] = useState(["", "", "", "", "", ""]);
+    const [resendLoading, setResendLoading] = useState(false);
+    const [resendCooldown, setResendCooldown] = useState(0);
+    const [attempts, setAttempts] = useState(0);
+    const [isBlocked, setIsBlocked] = useState(false);
+    const [remainingTime, setRemainingTime] = useState(0);
     const otpInputs = useRef([]);
     const location = useLocation();
     const navigate = useNavigate();
     const email = location.state?.email;
 
+    useEffect(() => {
+        if (otp.every(digit => digit !== "") && !isBlocked) {
+            handleVerifyOtp();
+        }
+    }, [otp]);
+    useEffect(() => {
+        if (attempts >= 5) {
+            setIsBlocked(true);
+            setRemainingTime(30);
+            toast.error("Too many attempts. Please try again in 30 seconds.");
+            const interval = setInterval(() => {
+                setRemainingTime((prev) => {
+                    if (prev <= 1) {
+                        clearInterval(interval);
+                        setIsBlocked(false);
+                        setAttempts(0);
+                        return 0;
+                    }
+                    return prev - 1;
+                });
+            }, 1000);
+        }
+    }, [attempts]);
+
+    useEffect(() => {
+        if (resendCooldown > 0) {
+            const interval = setInterval(() => {
+                setResendCooldown((prev) => {
+                    if (prev <= 1) {
+                        clearInterval(interval);
+                        return 0;
+                    }
+                    return prev - 1;
+                });
+            }, 1000);
+        }
+    }, [resendCooldown]);
+
     const handleChange = (index, value) => {
-        if (/^\d?$/.test(value)) {
+        if (/^[0-9]?$/.test(value)) {
             const newOtp = [...otp];
             newOtp[index] = value;
             setOtp(newOtp);
@@ -20,6 +64,12 @@ export default function VerifyOtp() {
             if (value && index < 5) {
                 otpInputs.current[index + 1].focus();
             }
+        }
+    };
+
+    const handleKeyDown = (index, e) => {
+        if (e.key === "Backspace" && !otp[index] && index > 0) {
+            otpInputs.current[index - 1].focus();
         }
     };
 
@@ -33,6 +83,11 @@ export default function VerifyOtp() {
     };
 
     const handleVerifyOtp = async () => {
+        if (isBlocked) {
+            toast.error(`Too many attempts. Please try again in ${remainingTime} seconds.`);
+            return;
+        }
+
         const otpCode = otp.join("");
 
         if (otpCode.length !== 6) {
@@ -52,10 +107,40 @@ export default function VerifyOtp() {
                 toast.success("OTP verified successfully!");
                 setTimeout(() => navigate("/reset-password", { state: { email } }), 1000);
             } else {
+                setAttempts(prev => prev + 1);
+                setOtp(["", "", "", "", "", ""]);
+                otpInputs.current[0]?.focus();
                 toast.error(data.message);
             }
         } catch (error) {
             toast.error("Something went wrong. Please try again.");
+        }
+    };
+
+    const handleResendOtp = async () => {
+        if (resendCooldown > 0) {
+            toast.error(`Please wait ${resendCooldown} seconds before resending.`);
+            return;
+        }
+        setResendLoading(true);
+        setResendCooldown(10);
+
+        try {
+            const response = await fetch("http://localhost:5082/api/otp/request", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ email }),
+            });
+            const data = await response.json();
+            if (response.ok) {
+                toast.success("OTP resent successfully!");
+            } else {
+                toast.error(data.message);
+            }
+        } catch (error) {
+            toast.error("Something went wrong. Please try again.");
+        } finally {
+            setResendLoading(false);
         }
     };
 
@@ -74,10 +159,10 @@ export default function VerifyOtp() {
                             inputRef={(el) => (otpInputs.current[index] = el)}
                             value={digit}
                             onChange={(e) => handleChange(index, e.target.value)}
+                            onKeyDown={(e) => handleKeyDown(index, e)}
                             variant="outlined"
                             sx={{ width: 50, textAlign: "center" }}
-                            inputProps={{ maxLength: 1, style: { textAlign: "center", fontSize: "1.5rem" } }}
-                        />
+                            inputProps={{ maxLength: 1, style: { textAlign: "center", fontSize: "1.5rem" }, pattern: "[0-9]*", inputMode: "numeric" }}                        />
                     </Grid>
                 ))}
             </Grid>
@@ -85,10 +170,11 @@ export default function VerifyOtp() {
                 fullWidth
                 variant="contained"
                 color="primary"
-                sx={{ mt: 3 }}
-                onClick={handleVerifyOtp}
+                sx={{ mt: 2 }}
+                onClick={handleResendOtp}
+                disabled={resendLoading || resendCooldown > 0}
             >
-                Verify OTP
+                {resendCooldown > 0 ? `Resend OTP (${resendCooldown}s)` : "Resend OTP"}
             </Button>
             <ToastContainer />
         </Box>

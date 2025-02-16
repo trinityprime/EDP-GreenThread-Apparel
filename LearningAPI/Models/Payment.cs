@@ -15,9 +15,10 @@ namespace LearningAPI.Models
         public int UserID { get; set; }
         public virtual User? User { get; set; } // Navigation to User model
 
-        [Required]
-        public int ShoppingCartID { get; set; } // Stores which cart is paid
-        public virtual List<ShoppingCart>? ShoppingCart { get; set; } // Navigation to Shopping Cart
+        [ForeignKey("ShoppingCart")]
+        public int? ShoppingCartID { get; set; } // Link to Shopping Cart
+        public virtual ShoppingCart? ShoppingCart { get; set; }
+
 
         [Required(ErrorMessage = "Address is required.")]
         [StringLength(250, ErrorMessage = "Address cannot exceed 250 characters.")]
@@ -33,7 +34,7 @@ namespace LearningAPI.Models
 
         [Required]
         [Column(TypeName = "decimal(10,2)")]
-        public decimal AmountPaid { get; set; } // Must match ShoppingCart GrandTotal
+        public decimal AmountPaid { get; set; } // Total payment amount
 
         [Required]
         [JsonConverter(typeof(JsonStringEnumConverter))]
@@ -42,6 +43,7 @@ namespace LearningAPI.Models
         public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
         public DateTime UpdatedAt { get; set; } = DateTime.UtcNow;
     }
+
 
     public enum PaymentStatus
     {

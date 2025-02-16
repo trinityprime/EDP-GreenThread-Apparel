@@ -25,6 +25,8 @@ import Product from "./pages/Product";
 import CreateProductForm from "./pages/components/CreateProductForm";
 import CreatePaymentForm from "./pages/components/CreatePaymentForm";
 import Payment from "./pages/Payment";
+import Delivery from "./pages/Delivery";
+import CreateDeliveryForm from "./pages/components/CreateDeliveryForm";
 
 
 function App() {
@@ -58,12 +60,18 @@ function App() {
                                 <Box sx={{ flexGrow: 1 }}></Box>
                                 {user && (
                                     <>
+                                        <Link to="/profile">
+                                            <Typography>Profile</Typography>
+                                        </Link>
                                         <Typography>{user.name}</Typography>
                                         <Button onClick={logout}>Logout</Button>
                                     </>
                                 )}
                                 {!user && (
                                     <>
+                                        <Link to="/profile">
+                                            <Typography>Profile</Typography>
+                                        </Link>
                                         <Link to="/register">
                                             <Typography>Register</Typography>
                                         </Link>
@@ -99,8 +107,8 @@ function App() {
                             <Route path="/create-product" element={<CreateProductForm />} />
                             <Route path="/create-payment" element={<CreatePaymentForm />} /> 
                             <Route path="/payments" element={<Payment />} /> 
-
-
+                            <Route path="/deliveries" element={<Delivery />} /> 
+                            <Route path="/deliveries/:orderID" element={<CreateDeliveryForm />} />
 
                         </Routes>
                     </Container>

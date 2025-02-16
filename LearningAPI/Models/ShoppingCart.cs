@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 
@@ -8,48 +9,20 @@ namespace LearningAPI.Models
     {
         [Key]
         [DatabaseGenerated(DatabaseGeneratedOption.Identity)]
-        public int ShoppingCartID { get; set; }
+        public int ShoppingCartID { get; set; } // Unique identifier for the shopping cart
 
         // Foreign Key for User
         [Required]
-        public int UserID { get; set; }
+        public int UserID { get; set; } // User owning the shopping cart
         [ForeignKey("UserID")]
-        public virtual User? User { get; set; }
+        public virtual User? User { get; set; } // Navigation property for the User
 
-        // Foreign Key for Product
-        [Required]
-        public int ProductID { get; set; }
-        [ForeignKey("ProductID")]
-        public virtual Product? Product { get; set; }
+        // Collection of items in the cart
+        public virtual ICollection<ShoppingCartItem> ShoppingCartItems { get; set; } = new List<ShoppingCartItem>(); 
+        public DateTime CreatedAt { get; set; } = DateTime.UtcNow; 
+        public DateTime UpdatedAt { get; set; } = DateTime.UtcNow; 
 
-        // Quantity of product
-        [Required]
-        [Range(1, int.MaxValue, ErrorMessage = "Quantity must be at least 1.")]
-        public int Quantity { get; set; }
-
-        // Grand total calculation (optional, can be calculated dynamically)
-        [Required]
-        [Range(0, double.MaxValue, ErrorMessage = "GrandTotal must be a positive value.")]
-        public decimal GrandTotal { get; set; }
-
-        // Created and Updated timestamps
-        [Required]
-        [Column(TypeName = "datetime")]
-        public DateTime CreatedAt { get; set; }
-
-        [Required]
-        [Column(TypeName = "datetime")]
-        public DateTime UpdatedAt { get; set; }
-
-        // Method to update quantity
-        public void UpdateQuantity(int newQuantity, decimal Price)
-        {
-            if (newQuantity < 1)
-                throw new ArgumentException("Quantity must be at least 1.");
-
-            Quantity = newQuantity;
-            GrandTotal = newQuantity * Price;
-            UpdatedAt = DateTime.UtcNow;
-        }
+        public bool IsActive { get; set; } = false;
     }
+
 }
