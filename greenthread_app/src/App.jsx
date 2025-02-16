@@ -99,9 +99,6 @@ function App() {
                             <Route path="/create-product" element={<CreateProductForm />} />
                             <Route path="/create-payment" element={<CreatePaymentForm />} /> 
                             <Route path="/payments" element={<Payment />} /> 
-
-
-
                         </Routes>
                     </Container>
                 </ThemeProvider>

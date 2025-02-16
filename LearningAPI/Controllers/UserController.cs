@@ -54,7 +54,8 @@ namespace LearningAPI.Controllers
 				CreatedAt = now,
 				UpdatedAt = now,
 				IsDeactivated = false,
-				Role = "User"
+				Role = "User",
+				IsTwoFactorEnabled = false 
 			};
 
 			// Add user
@@ -104,7 +105,8 @@ namespace LearningAPI.Controllers
 				foundUser.FirstName,
 				foundUser.LastName,
 				foundUser.PostalCode,
-				foundUser.Role
+				foundUser.Role,
+				foundUser.IsTwoFactorEnabled 
 			};
 
 			string accessToken = CreateToken(foundUser);
