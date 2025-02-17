@@ -33,18 +33,38 @@ function Delivery() {
         }
     }, [user]);
 
-    const fetchDeliveries = async (orderID) => {
-        if (!orderID) {
-            toast.error("Order ID is missing!");
+    const fetchDeliveries = async () => {
+        if (!user || !user.userID) {
+            toast.error("User is not logged in!");
             return;
         }
 
         try {
-            console.log(`Fetching deliveries for orderID: ${orderID}`); // Debugging
+            console.log(`Fetching orders for userID: ${user.userID}`);
 
-            const response = await http.get(`/api/Delivery/order/${orderID}`); // Call the new API
-            console.log("Delivery response:", response.data); // Debugging
-            setDeliveries(response.data);
+            //  Fetch orders belonging to the logged-in user
+            const orderResponse = await http.get(`/api/Order/user-orders/${user.userID}`);
+
+            const orders = orderResponse.data;
+
+            if (!orders.length) {
+                toast.warn("You have no orders yet.");
+                setDeliveries([]);
+                return;
+            }
+
+            //  Fetch deliveries for each order ID
+            const allDeliveries = [];
+            for (const order of orders) {
+                try {
+                    const deliveryResponse = await http.get(`/api/Delivery/order/${order.orderID}`);
+                    allDeliveries.push(...deliveryResponse.data);
+                } catch (err) {
+                    console.warn(`No deliveries found for Order ID ${order.orderID}.`);
+                }
+            }
+
+            setDeliveries(allDeliveries);
         } catch (err) {
             console.error("Error fetching deliveries:", err);
             toast.error("Failed to fetch deliveries.");
@@ -52,6 +72,7 @@ function Delivery() {
             setLoading(false);
         }
     };
+
 
     const handleUpdateDeliveryAddress = async (id, newAddress) => {
         try {

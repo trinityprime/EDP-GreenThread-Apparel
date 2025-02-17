@@ -38,19 +38,26 @@ namespace LearningAPI.Controllers
 			return Ok(delivery);
 		}
 
+
         // 📌 GET Deliveries for a Specific Order
         [HttpGet("order/{orderID}")]
         public async Task<IActionResult> GetDeliveriesByOrderId(int orderID)
         {
+            Console.WriteLine($"Fetching deliveries for Order ID: {orderID}"); // Debugging log
+
             var deliveries = await _context.Deliveries
-                .Where(d => d.OrderID == orderID) // Get deliveries linked to this Order ID
+                .Where(d => d.OrderID == orderID)
                 .ToListAsync();
 
             if (!deliveries.Any())
+            {
+                Console.WriteLine($"No deliveries found for Order ID {orderID}");
                 return NotFound($"No deliveries found for Order ID {orderID}.");
+            }
 
             return Ok(deliveries);
         }
+
 
 
         // ➕ POST Create a New Delivery
@@ -96,16 +103,23 @@ namespace LearningAPI.Controllers
             return Ok(new { message = "Address updated successfully." });
         }
 
-        // 🔄 PUT Update Delivery Status
+        public class UpdateDeliveryStatusRequest
+        {
+            public string NewStatus { get; set; }
+        }
+
         [HttpPut("{id}/status")]
-        public async Task<IActionResult> UpdateDeliveryStatus(int id, [FromBody] string newStatus)
+        public async Task<IActionResult> UpdateDeliveryStatus(int id, [FromBody] UpdateDeliveryStatusRequest request)
         {
             var delivery = await _context.Deliveries.FindAsync(id);
             if (delivery == null)
                 return NotFound("Delivery not found.");
 
-            // Validate if the status exists in the enum
-            if (!Enum.TryParse(newStatus, out Delivery.Delivery_Status parsedStatus))
+            if (string.IsNullOrWhiteSpace(request.NewStatus))
+                return BadRequest("Delivery status cannot be empty.");
+
+            // Ensure case-insensitive enum parsing
+            if (!Enum.TryParse(request.NewStatus, true, out Delivery.Delivery_Status parsedStatus))
                 return BadRequest("Invalid delivery status.");
 
             delivery.DeliveryStatus = parsedStatus;
