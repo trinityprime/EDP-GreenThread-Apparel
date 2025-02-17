@@ -108,41 +108,7 @@ function Delivery() {
                 Deliveries
             </Typography>
 
-            {/* New Delivery Form */}
-            <Box sx={{ mb: 4 }}>
-                <Typography variant="h6">Create New Delivery</Typography>
-                <TextField
-                    label="Order ID"
-                    value={newDelivery.orderID}
-                    onChange={(e) =>
-                        setNewDelivery({ ...newDelivery, orderID: e.target.value })
-                    }
-                    sx={{ mr: 2, mb: 2 }}
-                />
-                <TextField
-                    label="Address"
-                    value={newDelivery.address}
-                    onChange={(e) =>
-                        setNewDelivery({ ...newDelivery, address: e.target.value })
-                    }
-                    sx={{ mr: 2, mb: 2 }}
-                />
-                <Select
-                    value={newDelivery.deliveryStatus}
-                    onChange={(e) =>
-                        setNewDelivery({ ...newDelivery, deliveryStatus: e.target.value })
-                    }
-                    sx={{ width: "200px", mb: 2 }}
-                >
-                    <MenuItem value="Pending">Pending</MenuItem>
-                    <MenuItem value="In_Transit">In Transit</MenuItem>
-                    <MenuItem value="Delivered">Delivered</MenuItem>
-                    <MenuItem value="Cancelled">Cancelled</MenuItem>
-                </Select>
-                <Button variant="contained" onClick={handleCreateDelivery}>
-                    Create
-                </Button>
-            </Box>
+            
 
             {/* Delivery Table */}
             <TableContainer component={Paper}>
