@@ -338,10 +338,6 @@ function AdminDashboard() {
         }
     };
 
-
-
-
-
     const handleUpdateRefundStatus = async (refundID, newStatus) => {
         try {
             await http.put(`/api/Refund/${refundID}/status`, JSON.stringify(newStatus), {
@@ -381,19 +377,18 @@ function AdminDashboard() {
     };
 
     return (
-        <Box sx={{ display: "flex", height: "70vh", paddingTop: "30px" }}>
+        <Box sx={{ display: "flex", height: "50vh", paddingTop: "30px" }}>
             {/* Left Navigation Box */}
             <Box
                 sx={{
-                    width: 240,
-                    backgroundColor: "#f9f9f9",
-                    boxShadow: "0 4px 8px rgba(0, 0, 0, 0.1)", // Outer shadow
-                    border: "2px solid #e0e0e0", // Light border
-                    borderRadius: "8px", // Slightly rounded corners
+                    width: 200, // Thinner navigation
+                    backgroundColor: "#fff",
+                    boxShadow: "0 2px 4px rgba(0, 0, 0, 0.1)", // Subtle shadow
+                    border: "1px solid #e0e0e0", // Lighter border
+                    borderRadius: 2,
                     p: 2,
-                    top: "10px", // Adds space between the top of the viewport and the box
-                    mt: 2, // Adds some margin from the top
-                    mb: 2, // Adds margin from the bottom
+                    mt: 2,
+                    mb: 2,
                 }}
             >
                 <Typography
@@ -401,7 +396,8 @@ function AdminDashboard() {
                     sx={{
                         textAlign: "center",
                         fontWeight: "bold",
-                        textDecoration: "underline",
+                        borderBottom: "1px solid #e0e0e0",
+                        pb: 1,
                         mb: 2,
                     }}
                 >
@@ -415,7 +411,13 @@ function AdminDashboard() {
                             justifyContent: "flex-start",
                             textTransform: "none",
                             mb: 1,
-                            fontWeight: "bold",
+                            fontWeight: "medium",
+                            color: "#333",
+                            py: 1,
+                            borderRadius: 1,
+                            "&:hover": {
+                                backgroundColor: "#f5f5f5",
+                            },
                         }}
                         onClick={() => handleScrollToSection(section.ref)}
                     >
@@ -425,13 +427,18 @@ function AdminDashboard() {
             </Box>
 
             <Box sx={{ mt: 4, mx: 'auto', maxWidth: '800px' }} ref={adminSectionRef}>
-                <Typography variant="h4" sx={{ mb: 4 }} ref={adminSectionRef}>
-                    Admin Dashboard
-                </Typography>
-
                 {/* Admin List */}
-                <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 2 }} ref={adminSectionRef}>
-                    <Typography variant="h5">
+                <Box
+                    sx={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'space-between',
+                        mb: 3,
+                        px: 2,
+                    }}
+                    ref={adminSectionRef}
+                >
+                    <Typography variant="h5" fontWeight="bold" color="text.primary">
                         Admins
                     </Typography>
                     <Button
@@ -442,33 +449,41 @@ function AdminDashboard() {
                         Create Admin
                     </Button>
                 </Box>
-                <TableContainer component={Paper}>
+                <TableContainer component={Paper} sx={{ borderRadius: 2, boxShadow: 3 }}>
                     <Table>
-                        <TableHead>
+                        <TableHead sx={{ backgroundColor: 'primary.light' }}>
                             <TableRow>
-                                <TableCell><strong>Admin ID</strong></TableCell>
-                                <TableCell><strong>Email</strong></TableCell>
-                                <TableCell><strong>Status</strong></TableCell>
-                                <TableCell><strong>Actions</strong></TableCell>
+                                <TableCell sx={{ fontWeight: 'bold', color: 'white' }}>Admin ID</TableCell>
+                                <TableCell sx={{ fontWeight: 'bold', color: 'white' }}>Email</TableCell>
+                                <TableCell sx={{ fontWeight: 'bold', color: 'white' }}>Status</TableCell>
+                                <TableCell sx={{ fontWeight: 'bold', color: 'white' }}>Actions</TableCell>
                             </TableRow>
                         </TableHead>
                         <TableBody>
                             {admins.map((admin) => (
-                                <TableRow key={admin.adminID}>
+                                <TableRow key={admin.adminID} hover>
                                     <TableCell>{admin.adminID}</TableCell>
                                     <TableCell>{admin.email}</TableCell>
                                     <TableCell>
-                                        {admin.isDeactivated ? "Deactivated" : "Active"}
+                                        <Typography
+                                            variant="body2"
+                                            fontWeight="medium"
+                                            color={admin.isDeactivated ? 'error.main' : 'success.main'}
+                                        >
+                                            {admin.isDeactivated ? "Deactivated" : "Active"}
+                                        </Typography>
                                     </TableCell>
                                     <TableCell>
-                                        {/* Conditionally render buttons for non-super admin */}
-                                        {!isSuperAdmin(admin) && (
-                                            <>
+                                        {!isSuperAdmin(admin) ? (
+                                            <Box sx={{ display: 'flex', gap: 1 }}>
                                                 <Button
                                                     variant="contained"
+                                                    size="small"
                                                     sx={{
-                                                        backgroundColor: admin.isDeactivated ? 'orange' : 'error.main',
-                                                        mr: 2
+                                                        backgroundColor: admin.isDeactivated ? 'warning.main' : 'error.main',
+                                                        '&:hover': {
+                                                            backgroundColor: admin.isDeactivated ? 'warning.dark' : 'error.dark',
+                                                        },
                                                     }}
                                                     onClick={() => handleToggleActivation(admin.adminID, 'admin', admin.isDeactivated)}
                                                 >
@@ -476,15 +491,14 @@ function AdminDashboard() {
                                                 </Button>
                                                 <Button
                                                     variant="contained"
+                                                    size="small"
                                                     color="primary"
                                                     onClick={() => handleUpdate(admin.adminID, 'admin')}
                                                 >
                                                     Update
                                                 </Button>
-                                            </>
-                                        )}
-                                        {/* Display message for super admin */}
-                                        {isSuperAdmin(admin) && (
+                                            </Box>
+                                        ) : (
                                             <Typography variant="body2" color="textSecondary">
                                                 Super Admin cannot be updated or deactivated.
                                             </Typography>
@@ -496,9 +510,19 @@ function AdminDashboard() {
                     </Table>
                 </TableContainer>
 
-                {/* User List */}
-                <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mt: 4, mb: 2 }} ref={userSectionRef}>
-                    <Typography variant="h5">
+                {/* Manage Users */}
+                <Box
+                    sx={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'space-between',
+                        mt: 4,
+                        mb: 2,
+                        px: 2,
+                    }}
+                    ref={userSectionRef}  // Ensure you have this ref defined, or remove if not needed
+                >
+                    <Typography variant="h5" fontWeight="bold" color="text.primary">
                         Users
                     </Typography>
                     <Button
@@ -509,102 +533,144 @@ function AdminDashboard() {
                         Create User
                     </Button>
                 </Box>
-                <TableContainer component={Paper}>
+                <TableContainer component={Paper} sx={{ borderRadius: 2, boxShadow: 3 }}>
                     <Table>
-                        <TableHead>
+                        <TableHead sx={{ backgroundColor: 'primary.light' }}>
                             <TableRow>
-                                <TableCell><strong>User ID</strong></TableCell>
-                                <TableCell><strong>First Name</strong></TableCell>
-                                <TableCell><strong>Last Name</strong></TableCell>
-                                <TableCell><strong>Email</strong></TableCell>
-                                <TableCell><strong>Postal Code</strong></TableCell>
-                                <TableCell><strong>Status</strong></TableCell>
-                                <TableCell><strong>Actions</strong></TableCell>
+                                <TableCell sx={{ fontWeight: 'bold', color: 'white' }}>User ID</TableCell>
+                                <TableCell sx={{ fontWeight: 'bold', color: 'white' }}>Name</TableCell>
+                                <TableCell sx={{ fontWeight: 'bold', color: 'white' }}>Email</TableCell>
+                                <TableCell sx={{ fontWeight: 'bold', color: 'white' }}>Postal Code</TableCell>
+                                <TableCell sx={{ fontWeight: 'bold', color: 'white' }}>Status</TableCell>
+                                <TableCell sx={{ fontWeight: 'bold', color: 'white' }}>Actions</TableCell>
                             </TableRow>
                         </TableHead>
                         <TableBody>
                             {users.map((user) => (
-                                <TableRow key={user.userID}>
+                                <TableRow key={user.userID} hover>
                                     <TableCell>{user.userID}</TableCell>
-                                    <TableCell>{user.firstName}</TableCell>
-                                    <TableCell>{user.lastName}</TableCell>
+                                    <TableCell>
+                                        {user.firstName} {user.lastName}
+                                    </TableCell>
                                     <TableCell>{user.email}</TableCell>
                                     <TableCell>{user.postalCode}</TableCell>
                                     <TableCell>
-                                        {user.isDeactivated ? "Deactivated" : "Active"}
+                                        <Typography
+                                            variant="body2"
+                                            fontWeight="medium"
+                                            color={user.isDeactivated ? 'error.main' : 'success.main'}
+                                        >
+                                            {user.isDeactivated ? 'Deactivated' : 'Active'}
+                                        </Typography>
                                     </TableCell>
                                     <TableCell>
-                                        <Button
-                                            variant="contained"
-                                            sx={{
-                                                backgroundColor: user.isDeactivated ? 'orange' : 'error.main',
-                                                mr: 2
-                                            }}
-                                            onClick={() => handleToggleActivation(user.userID, 'user', user.isDeactivated)}
-                                        >
-                                            {user.isDeactivated ? "Activate" : "Deactivate"}
-                                        </Button>
-                                        <Button
-                                            variant="contained"
-                                            color="primary"
-                                            onClick={() => handleUpdate(user.userID, 'user')}
-                                        >
-                                            Update
-                                        </Button>
+                                        <Box sx={{ display: 'flex', gap: 1 }}>
+                                            <Button
+                                                variant="contained"
+                                                size="small"
+                                                color="primary"
+                                                onClick={() => navigate(`/update-user/${user.userID}`)}
+                                            >
+                                                Edit
+                                            </Button>
+                                            <Button
+                                                variant="contained"
+                                                size="small"
+                                                color="error"
+                                                onClick={() => handleToggleActivation(user.userID, 'user', user.isDeactivated)}
+                                            >
+                                                Deactivate
+                                            </Button>
+                                        </Box>
                                     </TableCell>
                                 </TableRow>
                             ))}
                         </TableBody>
                     </Table>
                 </TableContainer>
-                {/* Empty state handling */}
                 {users.length === 0 && (
                     <Typography sx={{ mt: 2 }} color="textSecondary">
                         No users available.
                     </Typography>
                 )}
 
+
                 {/* Manage Products */}
-                <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mt: 4, mb: 2 }} ref={productsSectionRef}>
-                    <Typography variant="h5">Products</Typography>
-                    <Button variant="contained" color="primary" onClick={() => navigate("/create-product")}>
+                <Box
+                    sx={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'space-between',
+                        mt: 4,
+                        mb: 2,
+                        px: 2,
+                    }}
+                    ref={productsSectionRef}
+                >
+                    <Typography variant="h5" fontWeight="bold" color="text.primary">
+                        Products
+                    </Typography>
+                    <Button
+                        variant="contained"
+                        color="primary"
+                        onClick={() => navigate("/create-product")}
+                    >
                         Create Product
                     </Button>
                 </Box>
-                <TableContainer component={Paper}>
+                <TableContainer component={Paper} sx={{ borderRadius: 2, boxShadow: 3 }}>
                     <Table>
-                        <TableHead>
+                        <TableHead sx={{ backgroundColor: 'primary.light' }}>
                             <TableRow>
-                                <TableCell><strong>Product ID</strong></TableCell>
-                                <TableCell><strong>Name</strong></TableCell>
-                                <TableCell><strong>Price</strong></TableCell>
-                                <TableCell><strong>Stock</strong></TableCell>
-                                <TableCell><strong>Status</strong></TableCell>
-                                <TableCell><strong>Actions</strong></TableCell>
+                                <TableCell sx={{ fontWeight: 'bold', color: 'white' }}>Product ID</TableCell>
+                                <TableCell sx={{ fontWeight: 'bold', color: 'white' }}>Name</TableCell>
+                                <TableCell sx={{ fontWeight: 'bold', color: 'white' }}>Price</TableCell>
+                                <TableCell sx={{ fontWeight: 'bold', color: 'white' }}>Stock</TableCell>
+                                <TableCell sx={{ fontWeight: 'bold', color: 'white' }}>Status</TableCell>
+                                <TableCell sx={{ fontWeight: 'bold', color: 'white' }}>Actions</TableCell>
                             </TableRow>
                         </TableHead>
                         <TableBody>
                             {products.map((product) => (
-                                <TableRow key={product.productID}>
+                                <TableRow key={product.productID} hover>
                                     <TableCell>{product.productID}</TableCell>
                                     <TableCell>{product.productName}</TableCell>
                                     <TableCell>${product.finalPrice.toFixed(2)}</TableCell>
                                     <TableCell>{product.stock}</TableCell>
-                                    <TableCell>{product.status}</TableCell>
                                     <TableCell>
-                                        <Button variant="contained" color="primary" onClick={() => navigate(`/update-product/${product.productID}`)}>
-                                            Edit
-                                        </Button>
-                                        <Button variant="contained" color="error" sx={{ ml: 2 }} onClick={() => handleDeleteProduct(product.productID)}>
-                                            Delete
-                                        </Button>
+                                        <Typography
+                                            variant="body2"
+                                            fontWeight="medium"
+                                            color={product.status === "Active" ? 'success.main' : 'error.main'}
+                                        >
+                                            {product.status}
+                                        </Typography>
+                                    </TableCell>
+                                    <TableCell>
+                                        <Box sx={{ display: 'flex', gap: 1 }}>
+                                            <Button
+                                                variant="contained"
+                                                size="small"
+                                                color="primary"
+                                                onClick={() => navigate(`/update-product/${product.productID}`)}
+                                            >
+                                                Edit
+                                            </Button>
+                                            <Button
+                                                variant="contained"
+                                                size="small"
+                                                color="error"
+                                                onClick={() => handleDeleteProduct(product.productID)}
+                                            >
+                                                Delete
+                                            </Button>
+                                        </Box>
                                     </TableCell>
                                 </TableRow>
                             ))}
                         </TableBody>
                     </Table>
                 </TableContainer>
-                {/* Empty state handling */}
                 {products.length === 0 && (
                     <Typography sx={{ mt: 2 }} color="textSecondary">
                         No products available.
@@ -612,26 +678,36 @@ function AdminDashboard() {
                 )}
 
                 {/* Payment List */}
-                <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mt: 4, mb: 2 }} ref={paymentsSectionRef}>
-                    <Typography variant="h5">
+                <Box
+                    sx={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'space-between',
+                        mt: 4,
+                        mb: 2,
+                        px: 2,
+                    }}
+                    ref={paymentsSectionRef}
+                >
+                    <Typography variant="h5" fontWeight="bold" color="text.primary">
                         Payments
                     </Typography>
                 </Box>
-                <TableContainer component={Paper}>
+                <TableContainer component={Paper} sx={{ borderRadius: 2, boxShadow: 3 }}>
                     <Table>
-                        <TableHead>
+                        <TableHead sx={{ backgroundColor: 'primary.light' }}>
                             <TableRow>
-                                <TableCell><strong>Payment ID</strong></TableCell>
-                                <TableCell><strong>User</strong></TableCell>
-                                <TableCell><strong>Amount Paid</strong></TableCell>
-                                <TableCell><strong>Payment Method</strong></TableCell>
-                                <TableCell><strong>Status</strong></TableCell>
-                                <TableCell><strong>Actions</strong></TableCell>
+                                <TableCell sx={{ fontWeight: 'bold', color: 'white' }}>Payment ID</TableCell>
+                                <TableCell sx={{ fontWeight: 'bold', color: 'white' }}>User</TableCell>
+                                <TableCell sx={{ fontWeight: 'bold', color: 'white' }}>Amount Paid</TableCell>
+                                <TableCell sx={{ fontWeight: 'bold', color: 'white' }}>Payment Method</TableCell>
+                                <TableCell sx={{ fontWeight: 'bold', color: 'white' }}>Status</TableCell>
+                                <TableCell sx={{ fontWeight: 'bold', color: 'white' }}>Actions</TableCell>
                             </TableRow>
                         </TableHead>
                         <TableBody>
                             {payments.map((payment) => (
-                                <TableRow key={payment.paymentID}>
+                                <TableRow key={payment.paymentID} hover>
                                     <TableCell>{payment.paymentID}</TableCell>
                                     <TableCell>{`${payment.user?.firstName} ${payment.user?.lastName}`}</TableCell>
                                     <TableCell>${payment.amountPaid.toFixed(2)}</TableCell>
@@ -651,9 +727,10 @@ function AdminDashboard() {
                                     </TableCell>
                                     <TableCell>
                                         <Button
-                                            color="error"
                                             variant="contained"
-                                            disabled={payment.paymentStatus !== "Cancelled"} // Disable if not "Cancelled"
+                                            color="error"
+                                            size="small"
+                                            disabled={payment.paymentStatus !== "Cancelled"}
                                             onClick={() => handleDeletePayment(payment.paymentID, payment.paymentStatus)}
                                         >
                                             Delete
@@ -664,8 +741,6 @@ function AdminDashboard() {
                         </TableBody>
                     </Table>
                 </TableContainer>
-
-                {/* Empty state handling */}
                 {payments.length === 0 && (
                     <Typography sx={{ mt: 2 }} color="textSecondary">
                         No payments available.
@@ -673,25 +748,35 @@ function AdminDashboard() {
                 )}
 
                 {/* Order List */}
-                <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mt: 4, mb: 2 }} ref={ordersSectionRef}>
-                    <Typography variant="h5">
+                <Box
+                    sx={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'space-between',
+                        mt: 4,
+                        mb: 2,
+                        px: 2,
+                    }}
+                    ref={ordersSectionRef}
+                >
+                    <Typography variant="h5" fontWeight="bold" color="text.primary">
                         Orders
                     </Typography>
                 </Box>
-                <TableContainer component={Paper}>
+                <TableContainer component={Paper} sx={{ borderRadius: 2, boxShadow: 3 }}>
                     <Table>
-                        <TableHead>
+                        <TableHead sx={{ backgroundColor: 'primary.light' }}>
                             <TableRow>
-                                <TableCell><strong>Order ID</strong></TableCell>
-                                <TableCell><strong>User</strong></TableCell>
-                                <TableCell><strong>Grand Total</strong></TableCell>
-                                <TableCell><strong>Status</strong></TableCell>
-                                <TableCell><strong>Actions</strong></TableCell>
+                                <TableCell sx={{ fontWeight: 'bold', color: 'white' }}>Order ID</TableCell>
+                                <TableCell sx={{ fontWeight: 'bold', color: 'white' }}>User</TableCell>
+                                <TableCell sx={{ fontWeight: 'bold', color: 'white' }}>Grand Total</TableCell>
+                                <TableCell sx={{ fontWeight: 'bold', color: 'white' }}>Status</TableCell>
+                                <TableCell sx={{ fontWeight: 'bold', color: 'white' }}>Actions</TableCell>
                             </TableRow>
                         </TableHead>
                         <TableBody>
                             {orders.map((order) => (
-                                <TableRow key={order.orderID}>
+                                <TableRow key={order.orderID} hover>
                                     <TableCell>{order.orderID}</TableCell>
                                     <TableCell>{`${order.user?.firstName} ${order.user?.lastName}`}</TableCell>
                                     <TableCell>${order.grandTotal.toFixed(2)}</TableCell>
@@ -708,14 +793,19 @@ function AdminDashboard() {
                                         </Select>
                                     </TableCell>
                                     <TableCell>
-                                        <Box sx={{ display: "flex", flexDirection: "column", gap: 1 }}>
-                                            <Button variant="outlined" onClick={() => handleViewOrder(order.orderID)}>
+                                        <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
+                                            <Button
+                                                variant="outlined"
+                                                size="small"
+                                                onClick={() => handleViewOrder(order.orderID)}
+                                            >
                                                 View Order
                                             </Button>
                                             <Button
                                                 color="error"
                                                 variant="contained"
-                                                disabled={order.orderStatus !== "Cancelled"} // Disable if not "Cancelled"
+                                                size="small"
+                                                disabled={order.orderStatus !== "Cancelled"}
                                                 onClick={() => handleDeleteOrder(order.orderID, order.orderStatus)}
                                             >
                                                 Delete
@@ -727,8 +817,6 @@ function AdminDashboard() {
                         </TableBody>
                     </Table>
                 </TableContainer>
-
-                {/* Empty state handling */}
                 {orders.length === 0 && (
                     <Typography sx={{ mt: 2 }} color="textSecondary">
                         No orders available.
@@ -745,15 +833,18 @@ function AdminDashboard() {
                             ) : (
                                 <>
                                     <Typography variant="h6" sx={{ mt: 2 }}>User Details</Typography>
-                                    <TableContainer component={Paper} sx={{ mt: 2 }}>
+                                    <TableContainer
+                                        component={Paper}
+                                        sx={{ mt: 2, borderRadius: 2, boxShadow: 3 }}
+                                    >
                                         <Table>
                                             <TableBody>
                                                 <TableRow>
-                                                    <TableCell><strong>Name</strong></TableCell>
+                                                    <TableCell sx={{ fontWeight: 'bold' }}>Name</TableCell>
                                                     <TableCell>{`${selectedOrder?.user?.firstName || "N/A"} ${selectedOrder?.user?.lastName || "N/A"}`}</TableCell>
                                                 </TableRow>
                                                 <TableRow>
-                                                    <TableCell><strong>Email</strong></TableCell>
+                                                    <TableCell sx={{ fontWeight: 'bold' }}>Email</TableCell>
                                                     <TableCell>{selectedOrder?.user?.email || "N/A"}</TableCell>
                                                 </TableRow>
                                             </TableBody>
@@ -761,23 +852,26 @@ function AdminDashboard() {
                                     </TableContainer>
 
                                     <Typography variant="h6" sx={{ mt: 2 }}>Payment Details</Typography>
-                                    <TableContainer component={Paper} sx={{ mt: 2 }}>
+                                    <TableContainer
+                                        component={Paper}
+                                        sx={{ mt: 2, borderRadius: 2, boxShadow: 3 }}
+                                    >
                                         <Table>
                                             <TableBody>
                                                 <TableRow>
-                                                    <TableCell><strong>Payment Method</strong></TableCell>
+                                                    <TableCell sx={{ fontWeight: 'bold' }}>Payment Method</TableCell>
                                                     <TableCell>{selectedOrder?.payment?.paymentMethod || "N/A"}</TableCell>
                                                 </TableRow>
                                                 <TableRow>
-                                                    <TableCell><strong>Address</strong></TableCell>
+                                                    <TableCell sx={{ fontWeight: 'bold' }}>Address</TableCell>
                                                     <TableCell>{selectedOrder?.payment?.address || "N/A"}</TableCell>
                                                 </TableRow>
                                                 <TableRow>
-                                                    <TableCell><strong>Phone</strong></TableCell>
+                                                    <TableCell sx={{ fontWeight: 'bold' }}>Phone</TableCell>
                                                     <TableCell>{selectedOrder?.payment?.phoneNumber || "N/A"}</TableCell>
                                                 </TableRow>
                                                 <TableRow>
-                                                    <TableCell><strong>Amount Paid</strong></TableCell>
+                                                    <TableCell sx={{ fontWeight: 'bold', color: 'red' }}>Amount Paid</TableCell>
                                                     <TableCell sx={{ color: "red", fontWeight: "bold" }}>
                                                         ${selectedOrder?.payment?.amountPaid?.toFixed(2) || "N/A"}
                                                     </TableCell>
@@ -787,16 +881,19 @@ function AdminDashboard() {
                                     </TableContainer>
 
                                     <Typography variant="h6" sx={{ mt: 2 }}>Order Items</Typography>
-                                    <TableContainer component={Paper} sx={{ mt: 2 }}>
+                                    <TableContainer
+                                        component={Paper}
+                                        sx={{ mt: 2, borderRadius: 2, boxShadow: 3 }}
+                                    >
                                         <Table>
-                                            <TableHead>
+                                            <TableHead sx={{ backgroundColor: 'grey.100' }}>
                                                 <TableRow>
-                                                    <TableCell><strong>Product</strong></TableCell>
-                                                    <TableCell><strong>Original Price</strong></TableCell>
-                                                    <TableCell><strong>Discount %</strong></TableCell>
-                                                    <TableCell><strong>Discounted Price</strong></TableCell>
-                                                    <TableCell><strong>Quantity</strong></TableCell>
-                                                    <TableCell><strong>Total</strong></TableCell>
+                                                    <TableCell sx={{ fontWeight: 'bold' }}>Product</TableCell>
+                                                    <TableCell sx={{ fontWeight: 'bold' }}>Original Price</TableCell>
+                                                    <TableCell sx={{ fontWeight: 'bold' }}>Discount %</TableCell>
+                                                    <TableCell sx={{ fontWeight: 'bold' }}>Discounted Price</TableCell>
+                                                    <TableCell sx={{ fontWeight: 'bold' }}>Quantity</TableCell>
+                                                    <TableCell sx={{ fontWeight: 'bold' }}>Total</TableCell>
                                                 </TableRow>
                                             </TableHead>
                                             <TableBody>
@@ -818,11 +915,15 @@ function AdminDashboard() {
                                                     })
                                                 ) : (
                                                     <TableRow>
-                                                        <TableCell colSpan={6} align="center">No items in this order.</TableCell>
+                                                        <TableCell colSpan={6} align="center">
+                                                            No items in this order.
+                                                        </TableCell>
                                                     </TableRow>
                                                 )}
                                                 <TableRow>
-                                                    <TableCell colSpan={5} align="right"><strong>Grand Total</strong></TableCell>
+                                                    <TableCell colSpan={5} align="right">
+                                                        <strong>Grand Total</strong>
+                                                    </TableCell>
                                                     <TableCell>
                                                         <strong>
                                                             ${selectedOrder?.items?.reduce((total, item) => {
@@ -833,7 +934,6 @@ function AdminDashboard() {
                                                     </TableCell>
                                                 </TableRow>
                                             </TableBody>
-
                                         </Table>
                                     </TableContainer>
                                 </>
@@ -842,39 +942,48 @@ function AdminDashboard() {
                     </Dialog>
                 )}
 
-                {/* Delivery List */}
-                <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mt: 4, mb: 2 }} ref={deliveriesSectionRef}>
-                    <Typography variant="h5">
+                {/* Deliveries Section */}
+                <Box
+                    sx={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'space-between',
+                        mt: 4,
+                        mb: 2,
+                        px: 2,
+                    }}
+                    ref={deliveriesSectionRef}
+                >
+                    <Typography variant="h5" fontWeight="bold" color="text.primary">
                         Deliveries
                     </Typography>
                 </Box>
-
-                <TableContainer component={Paper}>
+                <TableContainer component={Paper} sx={{ borderRadius: 2, boxShadow: 3 }}>
                     <Table>
-                        <TableHead>
+                        <TableHead sx={{ backgroundColor: 'primary.light' }}>
                             <TableRow>
-                                <TableCell><strong>Delivery ID</strong></TableCell>
-                                <TableCell><strong>Order ID</strong></TableCell>
-
-                                <TableCell><strong>Address</strong></TableCell>
-                                <TableCell><strong>Status</strong></TableCell>
-                                <TableCell><strong>Actions</strong></TableCell>
+                                <TableCell sx={{ fontWeight: 'bold', color: 'white' }}>Delivery ID</TableCell>
+                                <TableCell sx={{ fontWeight: 'bold', color: 'white' }}>Order ID</TableCell>
+                                <TableCell sx={{ fontWeight: 'bold', color: 'white' }}>Address</TableCell>
+                                <TableCell sx={{ fontWeight: 'bold', color: 'white' }}>Status</TableCell>
+                                <TableCell sx={{ fontWeight: 'bold', color: 'white' }}>Actions</TableCell>
                             </TableRow>
                         </TableHead>
                         <TableBody>
                             {deliveries.length > 0 ? (
                                 deliveries.map((delivery) => (
-                                    <TableRow key={delivery.deliveryID}>
+                                    <TableRow key={delivery.deliveryID} hover>
                                         <TableCell>{delivery.deliveryID}</TableCell>
                                         <TableCell>{delivery.orderID}</TableCell>
-
                                         <TableCell>{delivery.address}</TableCell>
                                         <TableCell>
                                             <Select
                                                 value={delivery.deliveryStatus}
-                                                onChange={(e) => handleUpdateDeliveryStatus(delivery.deliveryID, e.target.value)}
+                                                onChange={(e) =>
+                                                    handleUpdateDeliveryStatus(delivery.deliveryID, e.target.value)
+                                                }
                                                 size="small"
-                                                sx={{ width: "150px" }}
+                                                sx={{ width: '150px' }}
                                             >
                                                 <MenuItem value="Pending">Pending</MenuItem>
                                                 <MenuItem value="In_Transit">In Transit</MenuItem>
@@ -886,8 +995,8 @@ function AdminDashboard() {
                                             <Button
                                                 variant="contained"
                                                 color="error"
+                                                size="small"
                                                 onClick={() => handleDeleteDelivery(delivery.deliveryID)}
-                                                sx={{ ml: 2 }}
                                             >
                                                 Delete
                                             </Button>
@@ -896,7 +1005,7 @@ function AdminDashboard() {
                                 ))
                             ) : (
                                 <TableRow>
-                                    <TableCell colSpan={6} align="center">
+                                    <TableCell colSpan={5} align="center">
                                         No deliveries available.
                                     </TableCell>
                                 </TableRow>
@@ -904,6 +1013,7 @@ function AdminDashboard() {
                         </TableBody>
                     </Table>
                 </TableContainer>
+
 
                 {/* Dialog for Viewing/Editing Delivery*/}
                 {selectedDelivery && (
@@ -958,32 +1068,44 @@ function AdminDashboard() {
                     </Dialog>
                 )}
 
-                {/* Refund List */}
-                <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mt: 4, mb: 2 }} ref={refundsSectionRef}>
-                    <Typography variant="h5">
+                {/* Refunds Section */}
+                <Box
+                    sx={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'space-between',
+                        mt: 4,
+                        mb: 2,
+                        px: 2,
+                    }}
+                    ref={refundsSectionRef}
+                >
+                    <Typography variant="h5" fontWeight="bold" color="text.primary">
                         Refunds
                     </Typography>
                 </Box>
                 {loading ? (
                     <CircularProgress />
                 ) : refunds.length === 0 ? (
-                    <Typography sx={{ textAlign: "center", mt: 4 }}>No refunds found.</Typography>
+                    <Typography sx={{ textAlign: "center", mt: 4 }}>
+                        No refunds found.
+                    </Typography>
                 ) : (
-                    <TableContainer component={Paper}>
+                    <TableContainer component={Paper} sx={{ borderRadius: 2, boxShadow: 3 }}>
                         <Table>
-                            <TableHead>
+                            <TableHead sx={{ backgroundColor: 'primary.light' }}>
                                 <TableRow>
-                                    <TableCell><strong>Refund ID</strong></TableCell>
-                                    <TableCell><strong>Order ID</strong></TableCell>
-                                    <TableCell><strong>Amount</strong></TableCell>
-                                    <TableCell><strong>Status</strong></TableCell>
-                                    <TableCell><strong>Requested Date</strong></TableCell>
-                                    <TableCell><strong>Actions</strong></TableCell>
+                                    <TableCell sx={{ fontWeight: 'bold', color: 'white' }}>Refund ID</TableCell>
+                                    <TableCell sx={{ fontWeight: 'bold', color: 'white' }}>Order ID</TableCell>
+                                    <TableCell sx={{ fontWeight: 'bold', color: 'white' }}>Amount</TableCell>
+                                    <TableCell sx={{ fontWeight: 'bold', color: 'white' }}>Requested Date</TableCell>
+                                    <TableCell sx={{ fontWeight: 'bold', color: 'white' }}>Status</TableCell>
+                                    <TableCell sx={{ fontWeight: 'bold', color: 'white' }}>Actions</TableCell>
                                 </TableRow>
                             </TableHead>
                             <TableBody>
                                 {refunds.map((refund) => (
-                                    <TableRow key={refund.refundID}>
+                                    <TableRow key={refund.refundID} hover>
                                         <TableCell>{refund.refundID}</TableCell>
                                         <TableCell>{refund.orderID}</TableCell>
                                         <TableCell>${refund.refundAmount.toFixed(2)}</TableCell>
@@ -1001,11 +1123,11 @@ function AdminDashboard() {
                                             </Select>
                                         </TableCell>
                                         <TableCell>
-                                            <Box sx={{ display: "flex", flexDirection: "column", gap: 1 }}>
-
+                                            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
                                                 <Button
                                                     variant="contained"
                                                     color="primary"
+                                                    size="small"
                                                     onClick={() => fetchRefundDetails(refund.refundID, refund.orderID)}
                                                 >
                                                     View Details
@@ -1013,6 +1135,7 @@ function AdminDashboard() {
                                                 <Button
                                                     variant="contained"
                                                     color="error"
+                                                    size="small"
                                                     disabled={refund.refundStatus !== "Rejected"}
                                                     onClick={() => handleDeleteRefund(refund.refundID, refund.refundStatus)}
                                                 >
@@ -1027,6 +1150,7 @@ function AdminDashboard() {
                     </TableContainer>
                 )}
 
+
                 {/* View Refund Details Dialog */}
                 {selectedRefunds && (
                     <Dialog open onClose={() => setSelectedRefunds(null)} fullWidth maxWidth="md">
@@ -1037,48 +1161,48 @@ function AdminDashboard() {
                             ) : (
                                 <>
                                     <Typography variant="h6" sx={{ mt: 2 }}>Refund Information</Typography>
-                                    <TableContainer component={Paper} sx={{ mt: 2 }}>
+                                    <TableContainer component={Paper} sx={{ mt: 2, borderRadius: 2, boxShadow: 3 }}>
                                         <Table>
                                             <TableBody>
                                                 <TableRow>
-                                                    <TableCell><strong>Refund ID</strong></TableCell>
+                                                    <TableCell sx={{ fontWeight: 'bold' }}>Refund ID</TableCell>
                                                     <TableCell>{selectedRefunds.refundID}</TableCell>
                                                 </TableRow>
                                                 <TableRow>
-                                                    <TableCell><strong>Order ID</strong></TableCell>
+                                                    <TableCell sx={{ fontWeight: 'bold' }}>Order ID</TableCell>
                                                     <TableCell>{selectedRefunds.orderID}</TableCell>
                                                 </TableRow>
                                                 <TableRow>
-                                                    <TableCell><strong>Reason</strong></TableCell>
+                                                    <TableCell sx={{ fontWeight: 'bold' }}>Reason</TableCell>
                                                     <TableCell>{selectedRefunds.refundReason || "No reason provided"}</TableCell>
                                                 </TableRow>
                                                 <TableRow>
-                                                    <TableCell><strong>Status</strong></TableCell>
-                                                    <TableCell>{selectedRefunds.orderStatus}</TableCell>
+                                                    <TableCell sx={{ fontWeight: 'bold' }}>Status</TableCell>
+                                                    <TableCell>{selectedRefunds.refundStatus}</TableCell>
                                                 </TableRow>
                                                 <TableRow>
-                                                    <TableCell><strong>Refund Amount</strong></TableCell>
-                                                    <TableCell>${selectedRefunds.grandTotal.toFixed(2)}</TableCell>
+                                                    <TableCell sx={{ fontWeight: 'bold' }}>Refund Amount</TableCell>
+                                                    <TableCell>${selectedRefunds.refundAmount.toFixed(2)}</TableCell>
                                                 </TableRow>
                                             </TableBody>
                                         </Table>
                                     </TableContainer>
 
                                     <Typography variant="h6" sx={{ mt: 2 }}>Order Items</Typography>
-                                    <TableContainer component={Paper} sx={{ mt: 2 }}>
+                                    <TableContainer component={Paper} sx={{ mt: 2, borderRadius: 2, boxShadow: 3 }}>
                                         <Table>
-                                            <TableHead>
+                                            <TableHead sx={{ backgroundColor: 'grey.100' }}>
                                                 <TableRow>
-                                                    <TableCell><strong>Product</strong></TableCell>
-                                                    <TableCell><strong>Original Price</strong></TableCell>
-                                                    <TableCell><strong>Discount %</strong></TableCell>
-                                                    <TableCell><strong>Discounted Price</strong></TableCell>
-                                                    <TableCell><strong>Quantity</strong></TableCell>
-                                                    <TableCell><strong>Total</strong></TableCell>
+                                                    <TableCell sx={{ fontWeight: 'bold' }}>Product</TableCell>
+                                                    <TableCell sx={{ fontWeight: 'bold' }}>Original Price</TableCell>
+                                                    <TableCell sx={{ fontWeight: 'bold' }}>Discount %</TableCell>
+                                                    <TableCell sx={{ fontWeight: 'bold' }}>Discounted Price</TableCell>
+                                                    <TableCell sx={{ fontWeight: 'bold' }}>Quantity</TableCell>
+                                                    <TableCell sx={{ fontWeight: 'bold' }}>Total</TableCell>
                                                 </TableRow>
                                             </TableHead>
                                             <TableBody>
-                                                {selectedRefunds.items.length > 0 ? (
+                                                {selectedRefunds?.items?.length > 0 ? (
                                                     selectedRefunds.items.map((item, index) => {
                                                         const price = item.price || 0;
                                                         const discountPercentage = item.discountPercentage || 0;
@@ -1096,11 +1220,15 @@ function AdminDashboard() {
                                                     })
                                                 ) : (
                                                     <TableRow>
-                                                        <TableCell colSpan={6} align="center">No items in this order.</TableCell>
+                                                        <TableCell colSpan={6} align="center">
+                                                            No items in this order.
+                                                        </TableCell>
                                                     </TableRow>
                                                 )}
                                                 <TableRow>
-                                                    <TableCell colSpan={5} align="right"><strong>Grand Total</strong></TableCell>
+                                                    <TableCell colSpan={5} align="right">
+                                                        <strong>Grand Total</strong>
+                                                    </TableCell>
                                                     <TableCell>
                                                         <strong>
                                                             ${selectedRefunds?.items?.reduce((total, item) => {

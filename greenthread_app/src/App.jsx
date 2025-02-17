@@ -89,7 +89,7 @@ function App() {
                                     style={{ textDecoration: "none", color: "inherit" }}
                                 >
                                     <Typography variant="h6" component="div">
-                                        GreenThread
+                                        GreenThreadApparel
                                     </Typography>
                                 </Link>
                                 <Box sx={{ flexGrow: 1 }}></Box>
@@ -168,34 +168,23 @@ function App() {
                                             open={Boolean(anchorEl)}
                                             onClose={handleClose}
                                         >
-                                            <MenuItem
-                                                onClick={handleClose}
-                                                component={Link}
-                                                to="/profile"
-                                            >
-                                                View Profile
-                                            </MenuItem>
-                                            <MenuItem
-                                                onClick={handleClose}
-                                                component={Link}
-                                                to="/update-user"
-                                            >
-                                                Update Profile
-                                            </MenuItem>
-                                            <MenuItem
-                                                onClick={handleClose}
-                                                component={Link}
-                                                to="/deactivate-account"
-                                            >
-                                                Deactivate Account
-                                            </MenuItem>
-                                            <MenuItem
-                                                onClick={handleClose}
-                                                component={Link}
-                                                to="/enable-2fa"
-                                            >
-                                                Enable 2FA
-                                            </MenuItem>
+                                            {user?.role === "Admin" ? (
+                                                <MenuItem
+                                                    onClick={handleClose}
+                                                    component={Link}
+                                                    to="/admin-dashboard"
+                                                >
+                                                    View Dashboard
+                                                </MenuItem>
+                                            ) : (
+                                                <MenuItem
+                                                    onClick={handleClose}
+                                                    component={Link}
+                                                    to="/profile"
+                                                >
+                                                    View Profile
+                                                </MenuItem>
+                                            )}
                                             <MenuItem
                                                 onClick={() => {
                                                     handleClose();
