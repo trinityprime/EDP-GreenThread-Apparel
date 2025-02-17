@@ -95,6 +95,7 @@ namespace LearningAPI.Controllers
 				{
 					Requires2FA = true,
 					Email = foundUser.Email,
+					RecoveryCodes = foundUser.RecoveryCodes
 				});
 			}
 
@@ -107,7 +108,7 @@ namespace LearningAPI.Controllers
 				foundUser.LastName,
 				foundUser.PostalCode,
 				foundUser.Role,
-				foundUser.IsTwoFactorEnabled,
+				foundUser.IsTwoFactorEnabled
 			};
 
 			string accessToken = CreateToken(foundUser);
@@ -140,7 +141,7 @@ namespace LearningAPI.Controllers
 					firstName,
 					lastName,
 					postalCode,
-					role 
+					role // Include the user's role
 				};
 				return Ok(new { user });
 			}
@@ -162,7 +163,7 @@ namespace LearningAPI.Controllers
 					u.LastName,
 					u.Email,
 					u.PostalCode,
-					u.IsDeactivated, 
+					u.IsDeactivated, // Include deactivation status
 					u.CreatedAt,
 					u.UpdatedAt,
 					u.Role,

@@ -30,7 +30,7 @@ namespace LearningAPI.Models
 		public DateTime? OtpExpiry { get; set; }
         public string? TwoFactorSecret { get; set; }  // TOTP secret key
         public bool IsTwoFactorEnabled { get; set; }
-        public List<string> RecoveryCodes { get; set; } = new List<string>();  
+        public List<string> RecoveryCodes { get; set; } = new List<string>();  // Backup codes
         public List<string> PasswordHistory { get; set; } = new List<string>();
 
 		[Column(TypeName = "datetime")]
