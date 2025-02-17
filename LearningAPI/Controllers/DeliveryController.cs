@@ -38,8 +38,23 @@ namespace LearningAPI.Controllers
 			return Ok(delivery);
 		}
 
-		// ➕ POST Create a New Delivery
-		[HttpPost]
+        // 📌 GET Deliveries for a Specific Order
+        [HttpGet("order/{orderID}")]
+        public async Task<IActionResult> GetDeliveriesByOrderId(int orderID)
+        {
+            var deliveries = await _context.Deliveries
+                .Where(d => d.OrderID == orderID) // Get deliveries linked to this Order ID
+                .ToListAsync();
+
+            if (!deliveries.Any())
+                return NotFound($"No deliveries found for Order ID {orderID}.");
+
+            return Ok(deliveries);
+        }
+
+
+        // ➕ POST Create a New Delivery
+        [HttpPost]
 		public async Task<IActionResult> CreateDelivery([FromBody] Delivery delivery)
 		{
 			if (delivery == null)

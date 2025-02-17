@@ -245,6 +245,15 @@ function AdminDashboard() {
         }
     };
 
+    const handleViewDelivery = (delivery) => {
+        setSelectedDelivery(delivery);
+        setUpdatedAddress(delivery.address);
+        setUpdatedStatus(delivery.deliveryStatus);
+    };
+
+ 
+
+
       const fetchDeliveries = async () => {
         try {
             const response = await http.get("/api/Delivery");
@@ -287,7 +296,7 @@ function AdminDashboard() {
             console.error("Error updating delivery status:", err);
         }
     };
-
+    ``
 
     const handleDeleteDelivery = async (id) => {
         try {
@@ -768,16 +777,17 @@ function AdminDashboard() {
                 {/* Delivery List */}
                 <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mt: 4, mb: 2 }} ref={deliveriesSectionRef}>
                     <Typography variant="h5">
-                        Deliveries 
+                        Deliveries
                     </Typography>
                 </Box>
-                {/* Delivery Table */}
+
                 <TableContainer component={Paper}>
                     <Table>
                         <TableHead>
                             <TableRow>
                                 <TableCell><strong>Delivery ID</strong></TableCell>
                                 <TableCell><strong>Order ID</strong></TableCell>
+                               
                                 <TableCell><strong>Address</strong></TableCell>
                                 <TableCell><strong>Status</strong></TableCell>
                                 <TableCell><strong>Actions</strong></TableCell>
@@ -789,15 +799,22 @@ function AdminDashboard() {
                                     <TableRow key={delivery.deliveryID}>
                                         <TableCell>{delivery.deliveryID}</TableCell>
                                         <TableCell>{delivery.orderID}</TableCell>
+                                       
                                         <TableCell>{delivery.address}</TableCell>
-                                        <TableCell>{delivery.deliveryStatus}</TableCell>
                                         <TableCell>
-                                            <Button
-                                                variant="outlined"
-                                                onClick={() => setSelectedDelivery(delivery)}
+                                            <Select
+                                                value={delivery.deliveryStatus}
+                                                onChange={(e) => handleUpdateDeliveryStatus(delivery.deliveryID, e.target.value)}
+                                                size="small"
+                                                sx={{ width: "150px" }}
                                             >
-                                                View
-                                            </Button>
+                                                <MenuItem value="Pending">Pending</MenuItem>
+                                                <MenuItem value="In_Transit">In Transit</MenuItem>
+                                                <MenuItem value="Delivered">Delivered</MenuItem>
+                                                <MenuItem value="Cancelled">Cancelled</MenuItem>
+                                            </Select>
+                                        </TableCell>
+                                        <TableCell>
                                             <Button
                                                 variant="contained"
                                                 color="error"
@@ -811,7 +828,7 @@ function AdminDashboard() {
                                 ))
                             ) : (
                                 <TableRow>
-                                    <TableCell colSpan={5} align="center">
+                                    <TableCell colSpan={6} align="center">
                                         No deliveries available.
                                     </TableCell>
                                 </TableRow>
@@ -820,51 +837,66 @@ function AdminDashboard() {
                     </Table>
                 </TableContainer>
 
-                {/* Dialog for Viewing/Editing Delivery */}
+
+             
+
+                // Dialog for Viewing/Editing Delivery
                 {selectedDelivery && (
                     <Dialog open={!!selectedDelivery} onClose={handleCloseDialog} fullWidth>
-                        <DialogTitle>Delivery Details</DialogTitle>
+                        <DialogTitle sx={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                            Delivery Details
+                            <Button onClick={handleCloseDialog} sx={{ minWidth: "auto", color: "red", fontSize: "18px" }}>
+                                
+                            </Button>
+                        </DialogTitle>
                         <DialogContent>
                             <Typography><strong>Order ID:</strong> {selectedDelivery.orderID}</Typography>
-                            <Typography><strong>Address:</strong> {selectedDelivery.address}</Typography>
-                            <Typography><strong>Status:</strong> {selectedDelivery.deliveryStatus}</Typography>
 
                             <Box sx={{ mt: 2 }}>
                                 <TextField
                                     label="Update Address"
-                                    defaultValue={selectedDelivery.address}
-                                    onBlur={(e) =>
-                                        handleUpdateDeliveryAddress(
-                                            selectedDelivery.deliveryID,
-                                            e.target.value
-                                        )
-                                    }
-                                    sx={{ mr: 2 }}
+                                    value={updatedAddress}
+                                    onChange={(e) => setUpdatedAddress(e.target.value)}
+                                    sx={{ width: "100%", mb: 2 }}
                                 />
+                                <Button
+                                    variant="contained"
+                                    color="primary"
+                                    onClick={() => handleUpdateDeliveryAddress(selectedDelivery.deliveryID, updatedAddress)}
+                                    disabled={!updatedAddress || updatedAddress === selectedDelivery.address}
+                                >
+                                    Confirm Address Update
+                                </Button>
+                            </Box>
+
+                            <Box sx={{ mt: 2 }}>
                                 <Select
-                                    value={selectedDelivery?.deliveryStatus || "Pending"}
-                                    onChange={(e) =>
-                                        handleUpdateDeliveryStatus(selectedDelivery.deliveryID, e.target.value)
-                                    }
-                                    sx={{ width: "200px" }}
+                                    value={updatedStatus}
+                                    onChange={(e) => setUpdatedStatus(e.target.value)}
+                                    sx={{ width: "100%", mb: 2 }}
                                 >
                                     <MenuItem value="Pending">Pending</MenuItem>
                                     <MenuItem value="In_Transit">In Transit</MenuItem>
                                     <MenuItem value="Delivered">Delivered</MenuItem>
                                     <MenuItem value="Cancelled">Cancelled</MenuItem>
                                 </Select>
-
+                                <Button
+                                    variant="contained"
+                                    color="primary"
+                                    onClick={() => handleUpdateDeliveryStatus(selectedDelivery.deliveryID, updatedStatus)}
+                                    disabled={!updatedStatus || updatedStatus === selectedDelivery.deliveryStatus}
+                                >
+                                    Confirm Status Update
+                                </Button>
                             </Box>
                         </DialogContent>
                     </Dialog>
                 )}
 
-                 Empty state handling 
-                {deliveries.length === 0 && (
-                    <Typography sx={{ mt: 2 }} color="textSecondary">
-                        No deliveries available.
-                    </Typography>
-                )}
+                
+
+
+             
 
                 {/* Refund List */}
                 <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mt: 4, mb: 2 }} ref={refundsSectionRef}>
