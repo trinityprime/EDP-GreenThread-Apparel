@@ -1,10 +1,10 @@
-import React, { useEffect, useState, useContext, useRef } from 'react';
-import { Box, Typography, Button, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Paper, Select, MenuItem, Dialog, DialogTitle, DialogContent, TextField } from '@mui/material';
-import http from '../http';
-import { ToastContainer, toast } from 'react-toastify';
-import 'react-toastify/dist/ReactToastify.css';
-import UserContext from '../contexts/UserContext';
-import { useNavigate } from 'react-router-dom';
+import React, { useState, useEffect, useContext, useRef } from "react";
+import { Box, Typography, Button, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Paper, Select, MenuItem, Dialog, DialogTitle, DialogContent, TextField, CircularProgress } from "@mui/material";
+import { ToastContainer, toast } from "react-toastify";
+import "react-toastify/dist/ReactToastify.css";
+import UserContext from "../contexts/UserContext";
+import { useNavigate } from "react-router-dom";
+import http from "../http";
 
 function AdminDashboard() {
     const { user } = useContext(UserContext);
@@ -20,7 +20,10 @@ function AdminDashboard() {
     const [selectedRefunds, setSelectedRefunds] = useState(null);
     const [loadingDetails, setLoadingDetails] = useState(false);
     const navigate = useNavigate();
-    const [loading, setLoading] = useState(true); 
+    const [loading, setLoading] = useState(true);
+    const [error, setError] = useState(null);
+    const [updatedAddress, setUpdatedAddress] = useState("");
+    const [updatedStatus, setUpdatedStatus] = useState("");
 
     const adminSectionRef = useRef(null);
     const userSectionRef = useRef(null);
@@ -89,7 +92,7 @@ function AdminDashboard() {
 
             // Fetch deliveries data
             http.get("/api/Delivery")
-                .then((res) => { setDeliveries(res.data)})
+                .then((res) => { setDeliveries(res.data) })
                 .catch(() => toast.error("Failed to fetch delivery data."))
                 .finally(() => setLoading(false));
 
@@ -258,14 +261,14 @@ function AdminDashboard() {
 
 
     const fetchDeliveries = async () => {
-    try {
-        const response = await http.get("/api/Delivery");
-        setDeliveries(response.data);
-    } catch (err) {
-        toast.error("Failed to fetch deliveries.");
-    } finally {
-        setLoading(false);
-    }
+        try {
+            const response = await http.get("/api/Delivery");
+            setDeliveries(response.data);
+        } catch (err) {
+            toast.error("Failed to fetch deliveries.");
+        } finally {
+            setLoading(false);
+        }
     };
 
     const handleUpdateDeliveryAddress = async (id, newAddress) => {
@@ -371,14 +374,14 @@ function AdminDashboard() {
         }
     };
 
-   
+
     // Check if the admin is the super admin
     const isSuperAdmin = (admin) => {
         return admin.adminID === 1 && admin.email === 'superadmin@greenthread.com';
     };
 
     return (
-        <Box sx={{ display: "flex", height: "70vh", paddingTop: "30px"}}>
+        <Box sx={{ display: "flex", height: "70vh", paddingTop: "30px" }}>
             {/* Left Navigation Box */}
             <Box
                 sx={{
@@ -852,7 +855,7 @@ function AdminDashboard() {
                             <TableRow>
                                 <TableCell><strong>Delivery ID</strong></TableCell>
                                 <TableCell><strong>Order ID</strong></TableCell>
-                               
+
                                 <TableCell><strong>Address</strong></TableCell>
                                 <TableCell><strong>Status</strong></TableCell>
                                 <TableCell><strong>Actions</strong></TableCell>
@@ -864,7 +867,7 @@ function AdminDashboard() {
                                     <TableRow key={delivery.deliveryID}>
                                         <TableCell>{delivery.deliveryID}</TableCell>
                                         <TableCell>{delivery.orderID}</TableCell>
-                                       
+
                                         <TableCell>{delivery.address}</TableCell>
                                         <TableCell>
                                             <Select
@@ -901,14 +904,14 @@ function AdminDashboard() {
                         </TableBody>
                     </Table>
                 </TableContainer>
-             
+
                 {/* Dialog for Viewing/Editing Delivery*/}
                 {selectedDelivery && (
                     <Dialog open={!!selectedDelivery} onClose={handleCloseDialog} fullWidth>
                         <DialogTitle sx={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
                             Delivery Details
                             <Button onClick={handleCloseDialog} sx={{ minWidth: "auto", color: "red", fontSize: "18px" }}>
-                                
+
                             </Button>
                         </DialogTitle>
                         <DialogContent>
@@ -1015,7 +1018,7 @@ function AdminDashboard() {
                                                 >
                                                     Delete
                                                 </Button>
-                                             </Box>
+                                            </Box>
                                         </TableCell>
                                     </TableRow>
                                 ))}
