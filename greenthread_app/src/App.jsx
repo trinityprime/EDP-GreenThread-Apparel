@@ -1,6 +1,16 @@
 import "./App.css";
 import { useState, useEffect } from "react";
-import { Container, AppBar, Toolbar, Typography, Box, Button } from "@mui/material";
+import {
+    Container,
+    AppBar,
+    Toolbar,
+    Typography,
+    Box,
+    Button,
+    IconButton,
+    Menu,
+    MenuItem,
+} from "@mui/material";
 import { BrowserRouter as Router, Routes, Route, Link } from "react-router-dom";
 import { ThemeProvider } from "@mui/material/styles";
 import MyTheme from "./themes/MyTheme";
@@ -28,11 +38,22 @@ import CreatePaymentForm from "./pages/components/CreatePaymentForm";
 import Payment from "./pages/Payment";
 import Delivery from "./pages/Delivery";
 import CreateDeliveryForm from "./pages/components/CreateDeliveryForm";
-import Refund from "./pages/Refund"; 
-import CreateRefundForm from "./pages/components/CreateRefundForm"; 
+import Refund from "./pages/Refund";
+import CreateRefundForm from "./pages/components/CreateRefundForm";
+import HomeScreen from "./pages/HomeScreen";
+
+// Importing icons from MUI Icons
+import AccountCircle from "@mui/icons-material/AccountCircle";
+import ReceiptLongIcon from "@mui/icons-material/ReceiptLong";
+import LocalShippingIcon from "@mui/icons-material/LocalShipping";
+import MoneyOffIcon from "@mui/icons-material/MoneyOff";
+import PaymentIcon from "@mui/icons-material/Payment";
+import StorefrontIcon from "@mui/icons-material/Storefront";
+import ShoppingCartIcon from "@mui/icons-material/ShoppingCart";
 
 function App() {
     const [user, setUser] = useState(null);
+    const [anchorEl, setAnchorEl] = useState(null);
 
     useEffect(() => {
         if (localStorage.getItem("accessToken")) {
@@ -44,7 +65,16 @@ function App() {
 
     const logout = () => {
         localStorage.clear();
-        window.location = "/";
+        window.location = "/home";
+    };
+
+    // Functions to handle the profile dropdown menu
+    const handleMenu = (event) => {
+        setAnchorEl(event.currentTarget);
+    };
+
+    const handleClose = () => {
+        setAnchorEl(null);
     };
 
     return (
@@ -53,33 +83,138 @@ function App() {
                 <ThemeProvider theme={MyTheme}>
                     <AppBar position="static" className="AppBar">
                         <Container>
-                            <Toolbar disableGutters={true}>
-                                <Link to="/">
+                            <Toolbar disableGutters>
+                                <Link
+                                    to="/home"
+                                    style={{ textDecoration: "none", color: "inherit" }}
+                                >
                                     <Typography variant="h6" component="div">
                                         GreenThread
                                     </Typography>
                                 </Link>
                                 <Box sx={{ flexGrow: 1 }}></Box>
-                                {user && (
+                                {user ? (
                                     <>
-                                        <Link to="/profile">
-                                            <Typography>Profile</Typography>
-                                        </Link>
-                                        <Typography>{user.name}</Typography>
-                                        <Button onClick={logout}>Logout</Button>
+                                        {/* Icon buttons for orders, deliveries, refunds, payments, products, shopping cart */}
+                                        <IconButton
+                                            color="inherit"
+                                            component={Link}
+                                            to="/orders"
+                                            title="View Orders"
+                                        >
+                                            <ReceiptLongIcon />
+                                        </IconButton>
+                                        <IconButton
+                                            color="inherit"
+                                            component={Link}
+                                            to="/deliveries"
+                                            title="View Delivery"
+                                        >
+                                            <LocalShippingIcon />
+                                        </IconButton>
+                                        <IconButton
+                                            color="inherit"
+                                            component={Link}
+                                            to="/refunds"
+                                            title="View Refunds"
+                                        >
+                                            <MoneyOffIcon />
+                                        </IconButton>
+                                        <IconButton
+                                            color="inherit"
+                                            component={Link}
+                                            to="/payments"
+                                            title="View Payment"
+                                        >
+                                            <PaymentIcon />
+                                        </IconButton>
+                                        <IconButton
+                                            color="inherit"
+                                            component={Link}
+                                            to="/products"
+                                            title="View Products"
+                                        >
+                                            <StorefrontIcon />
+                                        </IconButton>
+                                        <IconButton
+                                            color="inherit"
+                                            component={Link}
+                                            to="/shopping-cart"
+                                            title="View Shopping Cart"
+                                        >
+                                            <ShoppingCartIcon />
+                                        </IconButton>
+                                        {/* Dropdown for profile-related actions */}
+                                        <IconButton
+                                            size="large"
+                                            edge="end"
+                                            color="inherit"
+                                            onClick={handleMenu}
+                                        >
+                                            <AccountCircle />
+                                        </IconButton>
+                                        <Menu
+                                            id="menu-appbar"
+                                            anchorEl={anchorEl}
+                                            anchorOrigin={{
+                                                vertical: "top",
+                                                horizontal: "right",
+                                            }}
+                                            keepMounted
+                                            transformOrigin={{
+                                                vertical: "top",
+                                                horizontal: "right",
+                                            }}
+                                            open={Boolean(anchorEl)}
+                                            onClose={handleClose}
+                                        >
+                                            <MenuItem
+                                                onClick={handleClose}
+                                                component={Link}
+                                                to="/profile"
+                                            >
+                                                View Profile
+                                            </MenuItem>
+                                            <MenuItem
+                                                onClick={handleClose}
+                                                component={Link}
+                                                to="/update-user"
+                                            >
+                                                Update Profile
+                                            </MenuItem>
+                                            <MenuItem
+                                                onClick={handleClose}
+                                                component={Link}
+                                                to="/deactivate-account"
+                                            >
+                                                Deactivate Account
+                                            </MenuItem>
+                                            <MenuItem
+                                                onClick={handleClose}
+                                                component={Link}
+                                                to="/enable-2fa"
+                                            >
+                                                Enable 2FA
+                                            </MenuItem>
+                                            <MenuItem
+                                                onClick={() => {
+                                                    handleClose();
+                                                    logout();
+                                                }}
+                                            >
+                                                Logout
+                                            </MenuItem>
+                                        </Menu>
                                     </>
-                                )}
-                                {!user && (
+                                ) : (
+                                    // If no user is logged in, show Login and Register
                                     <>
-                                        <Link to="/profile">
-                                            <Typography>Profile</Typography>
-                                        </Link>
-                                        <Link to="/register">
-                                            <Typography>Register</Typography>
-                                        </Link>
-                                        <Link to="/login">
-                                            <Typography>Login</Typography>
-                                        </Link>
+                                        <Button color="inherit" component={Link} to="/login">
+                                            Login
+                                        </Button>
+                                        <Button color="inherit" component={Link} to="/register">
+                                            Register
+                                        </Button>
                                     </>
                                 )}
                             </Toolbar>
@@ -88,13 +223,14 @@ function App() {
 
                     <Container>
                         <Routes>
-                            <Route path={"/"} element={<Tutorials />} />
-                            <Route path={"/tutorials"} element={<Tutorials />} />
-                            <Route path={"/register"} element={<Register />} />
-                            <Route path={"/login"} element={<Login />} />
-                            <Route path={"/admin-dashboard"} element={<AdminDashboard />} />
-                            <Route path={"/profile"} element={<Profile />} />
-                            <Route path={"/update-user"} element={<UpdateUser />} />
+                            <Route path="/" element={<Tutorials />} />
+                            <Route path="/tutorials" element={<Tutorials />} />
+                            <Route path="/home" element={<HomeScreen />} />
+                            <Route path="/register" element={<Register />} />
+                            <Route path="/login" element={<Login />} />
+                            <Route path="/admin-dashboard" element={<AdminDashboard />} />
+                            <Route path="/profile" element={<Profile />} />
+                            <Route path="/update-user" element={<UpdateUser />} />
                             <Route path="/update-user/:id" element={<UpdateForm type="user" />} />
                             <Route path="/update-admin/:id" element={<UpdateForm type="admin" />} />
                             <Route path="/create-admin" element={<CreateAdminForm />} />
@@ -104,10 +240,9 @@ function App() {
                             <Route path="/verify-otp" element={<VerifyOtp />} />
                             <Route path="/reset-password" element={<ResetPassword />} />
                             <Route path="/shopping-cart" element={<ShoppingCart />} />
-                            <Route path="/orders" element={<Order />} /> 
+                            <Route path="/orders" element={<Order />} />
                             <Route path="/products" element={<Product />} />
                             <Route path="/create-product" element={<CreateProductForm />} />
-                            <Route path="/update-product/:id" element={<UpdateProductForm />} />
                             <Route path="/create-payment" element={<CreatePaymentForm />} /> 
                             <Route path="/payments" element={<Payment />} /> 
                             <Route path="/deliveries" element={<Delivery />} /> 
