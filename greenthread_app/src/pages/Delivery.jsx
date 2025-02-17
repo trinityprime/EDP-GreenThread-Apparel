@@ -10,8 +10,6 @@ import {
     TableRow,
     Paper,
     Button,
-    Select,
-    MenuItem,
     TextField,
     Dialog,
     DialogTitle,
@@ -26,11 +24,6 @@ function Delivery() {
     const [selectedDelivery, setSelectedDelivery] = useState(null);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState("");
-    const [newDelivery, setNewDelivery] = useState({
-        orderID: "",
-        address: "",
-        deliveryStatus: "Pending",
-    });
 
     useEffect(() => {
         fetchDeliveries();
@@ -48,19 +41,6 @@ function Delivery() {
         }
     };
 
-    const handleCreateDelivery = async () => {
-        try {
-            await http.post("/api/Delivery", newDelivery, {
-                headers: { "Content-Type": "application/json" },
-            });
-            toast.success("Delivery created successfully.");
-            fetchDeliveries();
-            setNewDelivery({ orderID: "", address: "", deliveryStatus: "Pending" });
-        } catch (err) {
-            toast.error("Failed to create delivery.");
-        }
-    };
-
     const handleUpdateDeliveryAddress = async (id, newAddress) => {
         try {
             await http.put(`/api/Delivery/${id}/address`, newAddress, {
@@ -70,28 +50,6 @@ function Delivery() {
             fetchDeliveries();
         } catch (err) {
             toast.error("Failed to update address.");
-        }
-    };
-
-    const handleUpdateDeliveryStatus = async (id, newStatus) => {
-        try {
-            await http.put(`/api/Delivery/${id}/status`, JSON.stringify(newStatus), {
-                headers: { "Content-Type": "application/json" },
-            });
-            toast.success("Delivery status updated successfully.");
-            fetchDeliveries();
-        } catch (err) {
-            toast.error("Failed to update delivery status.");
-        }
-    };
-
-    const handleDeleteDelivery = async (id) => {
-        try {
-            await http.delete(`/api/Delivery/${id}`);
-            toast.success("Delivery deleted successfully.");
-            fetchDeliveries();
-        } catch (err) {
-            toast.error("Failed to delete delivery.");
         }
     };
 
@@ -105,10 +63,8 @@ function Delivery() {
     return (
         <Box sx={{ mt: 4, mx: "auto", maxWidth: "900px" }}>
             <Typography variant="h4" sx={{ mb: 4 }}>
-                Deliveries
+                Your Deliveries
             </Typography>
-
-            
 
             {/* Delivery Table */}
             <TableContainer component={Paper}>
@@ -134,15 +90,7 @@ function Delivery() {
                                         variant="outlined"
                                         onClick={() => setSelectedDelivery(delivery)}
                                     >
-                                        View
-                                    </Button>
-                                    <Button
-                                        variant="contained"
-                                        color="error"
-                                        onClick={() => handleDeleteDelivery(delivery.deliveryID)}
-                                        sx={{ ml: 2 }}
-                                    >
-                                        Delete
+                                        View / Edit Address
                                     </Button>
                                 </TableCell>
                             </TableRow>
@@ -151,7 +99,7 @@ function Delivery() {
                 </Table>
             </TableContainer>
 
-            {/* Dialog for Viewing/Editing Delivery */}
+            {/* Dialog for Viewing/Editing Address */}
             {selectedDelivery && (
                 <Dialog open={!!selectedDelivery} onClose={handleCloseDialog} fullWidth>
                     <DialogTitle>Delivery Details</DialogTitle>
@@ -160,6 +108,7 @@ function Delivery() {
                         <Typography><strong>Address:</strong> {selectedDelivery.address}</Typography>
                         <Typography><strong>Status:</strong> {selectedDelivery.deliveryStatus}</Typography>
 
+                        {/* User can only update the Address */}
                         <Box sx={{ mt: 2 }}>
                             <TextField
                                 label="Update Address"
@@ -170,23 +119,8 @@ function Delivery() {
                                         e.target.value
                                     )
                                 }
-                                sx={{ mr: 2 }}
+                                fullWidth
                             />
-                            <Select
-                                value={selectedDelivery.deliveryStatus}
-                                onChange={(e) =>
-                                    handleUpdateDeliveryStatus(
-                                        selectedDelivery.deliveryID,
-                                        e.target.value
-                                    )
-                                }
-                                sx={{ width: "200px" }}
-                            >
-                                <MenuItem value="Pending">Pending</MenuItem>
-                                <MenuItem value="In_Transit">In Transit</MenuItem>
-                                <MenuItem value="Delivered">Delivered</MenuItem>
-                                <MenuItem value="Cancelled">Cancelled</MenuItem>
-                            </Select>
                         </Box>
                     </DialogContent>
                 </Dialog>

@@ -245,6 +245,17 @@ function AdminDashboard() {
         }
     };
 
+      const fetchDeliveries = async () => {
+        try {
+            const response = await http.get("/api/Delivery");
+            setDeliveries(response.data);
+        } catch (err) {
+            toast.error("Failed to fetch deliveries.");
+        } finally {
+            setLoading(false);
+        }
+    };
+
     const handleUpdateDeliveryAddress = async (id, newAddress) => {
         try {
             await http.put(`/api/Delivery/${id}/address`, newAddress, {
@@ -259,13 +270,11 @@ function AdminDashboard() {
 
     const handleUpdateDeliveryStatus = async (id, newStatus) => {
         try {
-            await http.put(`/api/Delivery/${id}/status`, JSON.stringify(newStatus), {
+            await http.put(`/api/Delivery/${id}/status`, newStatus, { // Send raw string
                 headers: { "Content-Type": "application/json" },
             });
 
             toast.success(`Delivery ${id} updated to ${newStatus}`);
-
-            // Refresh deliveries after updating
             setDeliveries((prevDeliveries) =>
                 prevDeliveries.map((delivery) =>
                     delivery.deliveryID === id
@@ -280,9 +289,6 @@ function AdminDashboard() {
     };
 
 
-
-
-
     const handleDeleteDelivery = async (id) => {
         try {
             await http.delete(`/api/Delivery/${id}`);
@@ -292,6 +298,11 @@ function AdminDashboard() {
             toast.error("Failed to delete delivery.");
         }
     };
+
+   
+
+   
+
 
     // Check if the admin is the super admin
     const isSuperAdmin = (admin) => {
@@ -832,7 +843,9 @@ function AdminDashboard() {
                                 />
                                 <Select
                                     value={selectedDelivery?.deliveryStatus || "Pending"}
-                                    onChange={(e) => handleUpdateDeliveryStatus(selectedDelivery.deliveryID, e.target.value)}
+                                    onChange={(e) =>
+                                        handleUpdateDeliveryStatus(selectedDelivery.deliveryID, e.target.value)
+                                    }
                                     sx={{ width: "200px" }}
                                 >
                                     <MenuItem value="Pending">Pending</MenuItem>

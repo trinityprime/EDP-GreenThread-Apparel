@@ -62,6 +62,26 @@ namespace LearningAPI.Controllers
         // 📝 PUT Update Delivery Address
 
 
+        // 📝 PUT Update Delivery Address
+        [HttpPut("{id}/address")]
+        public async Task<IActionResult> UpdateDeliveryAddress(int id, [FromBody] string newAddress)
+        {
+            var delivery = await _context.Deliveries.FindAsync(id);
+            if (delivery == null)
+                return NotFound("Delivery not found.");
+
+            // Validate address input
+            if (string.IsNullOrWhiteSpace(newAddress) || newAddress.Length > 255)
+                return BadRequest("Invalid address. Ensure it is not empty and within 255 characters.");
+
+            delivery.Address = newAddress;
+            delivery.UpdatedAt = DateTime.UtcNow;
+
+            await _context.SaveChangesAsync();
+            return Ok(new { message = "Address updated successfully." });
+        }
+
+        // 🔄 PUT Update Delivery Status
         [HttpPut("{id}/status")]
         public async Task<IActionResult> UpdateDeliveryStatus(int id, [FromBody] string newStatus)
         {
@@ -78,30 +98,6 @@ namespace LearningAPI.Controllers
 
             await _context.SaveChangesAsync();
             return Ok(new { message = $"Delivery status updated to {parsedStatus}." });
-        }
-
-
-
-        // 🔄 PUT Update Delivery Status
-        [HttpPut("{id}/status")]
-        public async Task<IActionResult> UpdateDeliveryStatus(int id, [FromBody] dynamic payload)
-        {
-            var delivery = await _context.Deliveries.FindAsync(id);
-            if (delivery == null)
-                return NotFound("Delivery not found.");
-
-            // Extract deliveryStatus from JSON payload
-            string statusString = payload.deliveryStatus?.ToString();
-
-            // Validate that the status exists in the enum
-            if (!Enum.TryParse(statusString, out Delivery.Delivery_Status newStatus))
-                return BadRequest("Invalid delivery status.");
-
-            delivery.DeliveryStatus = newStatus;
-            delivery.UpdatedAt = DateTime.UtcNow;
-
-            await _context.SaveChangesAsync();
-            return Ok(new { message = $"Delivery status updated to {newStatus}." });
         }
 
 
