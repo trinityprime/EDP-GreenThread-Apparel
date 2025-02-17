@@ -132,15 +132,23 @@ namespace LearningAPI.Controllers
 
         // 🗑️ DELETE Delivery
         [HttpDelete("{id}")]
-		public async Task<IActionResult> DeleteDelivery(int id)
-		{
-			var delivery = await _context.Deliveries.FindAsync(id);
-			if (delivery == null)
-				return NotFound("Delivery not found.");
+        public async Task<IActionResult> DeleteDelivery(int id)
+        {
+            var delivery = await _context.Deliveries.FindAsync(id);
+            if (delivery == null)
+                return NotFound("Delivery not found.");
 
-			_context.Deliveries.Remove(delivery);
-			await _context.SaveChangesAsync();
-			return NoContent();
-		}
-	}
+            try
+            {
+                _context.Deliveries.Remove(delivery);
+                await _context.SaveChangesAsync();
+                return Ok(new { message = "Delivery deleted successfully." });
+            }
+            catch (DbUpdateException)
+            {
+                return BadRequest("Cannot delete delivery as it is linked to other records.");
+            }
+        }
+
+    }
 }

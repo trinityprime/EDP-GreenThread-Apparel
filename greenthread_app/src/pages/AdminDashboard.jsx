@@ -271,23 +271,29 @@ function AdminDashboard() {
 
     const handleUpdateDeliveryAddress = async (id, newAddress) => {
         try {
-            await http.put(`/api/Delivery/${id}/address`, newAddress, {
-                headers: { "Content-Type": "application/json" },
-            });
+            console.log("Updating delivery address:", { id, newAddress }); // Debugging log
+
+            await http.put(`/api/Delivery/${id}/address`,
+                { newAddress }, // Send as JSON object
+                { headers: { "Content-Type": "application/json" } }
+            );
+
             toast.success("Address updated successfully.");
             fetchDeliveries();
         } catch (err) {
-            toast.error("Failed to update address.");
+            console.error("Failed to update address:", err.response?.data);
+            toast.error(`Failed to update address: ${err.response?.data || "Unknown error"}`);
         }
     };
 
     const handleUpdateDeliveryStatus = async (id, newStatus) => {
         try {
-            await http.put(`/api/Delivery/${id}/status`, JSON.stringify(newStatus), {
-                headers: { "Content-Type": "application/json" },
-            });
+            console.log("Updating delivery status:", { id, newStatus }); // Debugging log
 
-
+            await http.put(`/api/Delivery/${id}/status`,
+                { NewStatus: newStatus }, // Send as JSON object
+                { headers: { "Content-Type": "application/json" } }
+            );
 
             toast.success(`Delivery ${id} updated to ${newStatus}`);
             setDeliveries((prevDeliveries) =>
@@ -298,33 +304,31 @@ function AdminDashboard() {
                 )
             );
         } catch (err) {
-            toast.error("Failed to update delivery status.");
-            console.error("Error updating delivery status:", err);
+            console.error("Error updating delivery status:", err.response?.data);
+            toast.error(`Failed to update delivery status: ${err.response?.data || "Unknown error"}`);
         }
     };
-    ``
 
     const handleDeleteDelivery = async (id) => {
         try {
-            await http.delete(`/api/Delivery/${id}`);
+            console.log("Deleting delivery:", id); // Debugging log
+
+            const response = await http.delete(`/api/Delivery/${id}`);
+            console.log("Delete response:", response); // Log response
+
             toast.success("Delivery deleted successfully.");
             fetchDeliveries();
         } catch (err) {
-            toast.error("Failed to delete delivery.");
+            console.error("Failed to delete delivery:", err.response?.data);
+            toast.error(`Failed to delete delivery: ${err.response?.data || "Unknown error"}`);
         }
     };
 
-    const fetchRefundDetails = async (refundID) => {
-        setLoadingDetails(true);
-        try {
-            const response = await http.get(`/api/Refund/${refundID}`);
-            setSelectedRefund(response.data);
-        } catch (error) {
-            toast.error("Failed to load refund details.");
-        } finally {
-            setLoadingDetails(false);
-        }
-    };
+
+    
+
+
+
 
 
     const handleUpdateRefundStatus = async (refundID, newStatus) => {
