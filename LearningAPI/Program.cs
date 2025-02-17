@@ -10,15 +10,6 @@ using System.Text.Json.Serialization;
 
 var builder = WebApplication.CreateBuilder(args);
 
-// Add services to the container.
-builder.Services.AddCors(options =>
-{
-    options.AddPolicy("AllowFrontend",
-        policy => policy.WithOrigins("http://localhost:3002") // Allow your frontend
-                        .AllowAnyHeader()
-                        .AllowAnyMethod());
-});
-
 builder.Services.AddScoped<OtpService>();
 builder.Services.AddScoped<EmailService>();
 
@@ -136,8 +127,6 @@ if (app.Environment.IsDevelopment())
 	app.UseSwaggerUI();
 }
 
-// Enable CORS for the application
-app.UseCors("AllowFrontend");
 
 app.UseRouting();
 
