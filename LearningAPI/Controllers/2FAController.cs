@@ -39,7 +39,7 @@ namespace LearningAPI.Controllers
 			user.TwoFactorSecret = Base32Encoding.ToString(secretKey);
 
 			// Generate QR code URI
-			var issuer = _configuration["Jwt:Issuer"] ?? "YourAppName";
+			var issuer = _configuration["Jwt:Issuer"] ?? "GreenThreadApparel";
 			var qrCodeUri = $"otpauth://totp/{issuer}:{user.Email}?secret={user.TwoFactorSecret}&issuer={issuer}";
 
 			// Generate QR code image
@@ -109,13 +109,44 @@ namespace LearningAPI.Controllers
 			if (isValid)
 			{
 				var accessToken = CreateToken(user);
-				return Ok(new { AccessToken = accessToken });
+				if (user.Role == "Admin")
+				{
+					return Ok(new
+					{
+						admin = new
+						{
+							user.UserID,
+							user.Email,
+							user.FirstName,
+							user.LastName,
+							user.PostalCode,
+							user.Role,
+							user.IsTwoFactorEnabled
+						},
+						accessToken = accessToken
+					});
+				}
+				else
+				{
+					return Ok(new
+					{
+						user = new
+						{
+							user.UserID,
+							user.Email,
+							user.FirstName,
+							user.LastName,
+							user.PostalCode,
+							user.Role,
+							user.IsTwoFactorEnabled
+						},
+						accessToken = accessToken
+					});
+				}
 			}
-
 			return BadRequest("Invalid 2FA code or recovery code");
 		}
 
-		// In _2FAController.cs
 		[HttpPost("disable")]
 		[Authorize]
 		public IActionResult Disable2FA()
