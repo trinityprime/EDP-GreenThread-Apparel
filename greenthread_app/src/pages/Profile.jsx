@@ -5,37 +5,22 @@ import axios from "../http";
 import UserContext from "../contexts/UserContext";
 import { QRCodeSVG } from "qrcode.react";
 
-
 function Profile() {
     const { user, setUser } = useContext(UserContext);
     const [open, setOpen] = useState(false);
     const [open2FA, setOpen2FA] = useState(false); // For 2FA dialog
     const [qrData, setQrData] = useState(null); // Stores QR code data
     const [verificationCode, setVerificationCode] = useState(""); // For 2FA verification
+    const [disable2FAOpen, setDisable2FAOpen] = useState(false);
+    const [backupCodes, setBackupCodes] = useState([]);
     const [error, setError] = useState(""); // For error messages
     const navigate = useNavigate();
 
-    if (!user) {
-        return (
-            <Box sx={{ mt: 4, mx: "auto", maxWidth: "500px", textAlign: "center" }}>
-                <Typography variant="h5" sx={{ mb: 2 }}>Profile</Typography>
-                <Typography variant="body1" color="error">
-                    Please log in to access your profile.
-                </Typography>
-                <Button variant="contained" color="primary" sx={{ mt: 2 }} onClick={() => navigate("/login")}>
-                    Log In
-                </Button>
-            </Box>
-        );
-    }
-
+    // Existing functions...
     const handleUpdateClick = () => navigate("/update-user");
     const handleShoppingCartClick = () => navigate("/shopping-cart");
     const handleOrdersClick = () => navigate("/orders");
     const handleViewProductsClick = () => navigate("/products");
-    const handleDeliveriesClick = () => navigate("/deliveries");
-    const handlePaymentsClick = () => navigate("/payments");
-    const handleRefundsClick = () => navigate("/refunds");
     const handleDeactivateClick = () => setOpen(true);
     const handleClose = () => setOpen(false);
 
@@ -57,8 +42,8 @@ function Profile() {
             headers: { Authorization: `Bearer ${localStorage.getItem("token")}` }
         })
             .then((response) => {
-                setQrData(response.data); // Set QR code data
-                setOpen2FA(true); // Open 2FA dialog
+                setQrData(response.data);
+                setOpen2FA(true);
             })
             .catch((error) => {
                 console.error("Error enabling 2FA:", error);
@@ -71,14 +56,35 @@ function Profile() {
         axios.post("/api/2fa/verify", { code: verificationCode }, {
             headers: { Authorization: `Bearer ${localStorage.getItem("token")}` }
         })
-            .then(() => {
-                setOpen2FA(false); // Close 2FA dialog
-                setError(""); // Clear error
-                alert("2FA has been enabled successfully!");
+            .then((res) => {
+                setOpen2FA(false);
+                setError("");
+                setUser({ ...user, isTwoFactorEnabled: true });
+                setBackupCodes(res.data.RecoveryCodes);
+                alert("2FA Enabled! Please save your backup codes.");
             })
             .catch((error) => {
                 console.error("Error verifying 2FA:", error);
                 setError("Invalid verification code. Please try again.");
+            });
+    };
+
+    const handleDisable2FA = () => {
+        setDisable2FAOpen(true);
+    };
+
+    const confirmDisable2FA = () => {
+        axios.post("/api/2fa/disable", {}, {
+            headers: { Authorization: `Bearer ${localStorage.getItem("token")}` }
+        })
+            .then(() => {
+                setUser({ ...user, isTwoFactorEnabled: false });
+                setDisable2FAOpen(false);
+                alert("2FA has been disabled!");
+            })
+            .catch((error) => {
+                console.error("Error disabling 2FA:", error);
+                setError("Failed to disable 2FA.");
             });
     };
 
@@ -91,33 +97,22 @@ function Profile() {
             <Typography variant="body1"><strong>Last Name:</strong> {user.lastName}</Typography>
             <Typography variant="body1"><strong>Email:</strong> {user.email}</Typography>
             <Typography variant="body1"><strong>Postal Code:</strong> {user.postalCode}</Typography>
+            <Typography variant="body1"><strong>2FA Status:</strong> {user.isTwoFactorEnabled ? "Enabled" : "Disabled"}</Typography>
 
             <Button variant="contained" color="primary" sx={{ mt: 2 }} onClick={handleUpdateClick}>
                 Update Profile
-            </Button>
-
-            <Button variant="contained" color="success" sx={{ mt: 2, ml: 2 }} onClick={handleViewProductsClick}>
-                View Products
             </Button>
 
             <Button variant="contained" color="secondary" sx={{ mt: 2, ml: 2 }} onClick={handleShoppingCartClick}>
                 View Shopping Cart
             </Button>
 
-            <Button variant="contained" color="primary" sx={{ mt: 2, ml: 2 }} onClick={handlePaymentsClick}>
-                View Payment History
-            </Button>
-
             <Button variant="contained" color="primary" sx={{ mt: 2, ml: 2 }} onClick={handleOrdersClick}>
                 View My Orders
             </Button>
 
-            <Button variant="contained" color="success" sx={{ mt: 2, ml: 2 }} onClick={handleDeliveriesClick}>
-                View My Deliveries
-            </Button>
-
-            <Button variant="contained" color="success" sx={{ mt: 2, ml: 2 }} onClick={handleRefundsClick}>
-                View My Refunds
+            <Button variant="contained" color="success" sx={{ mt: 2, ml: 2 }} onClick={handleViewProductsClick}>
+                View Products
             </Button>
 
             <Button variant="contained" color="error" sx={{ mt: 2, ml: 2 }} onClick={handleDeactivateClick}>
@@ -125,8 +120,13 @@ function Profile() {
             </Button>
 
             {/* Enable 2FA Button */}
-            <Button variant="contained" color="info" sx={{ mt: 2, ml: 2 }} onClick={handleEnable2FA}>
-                Enable 2FA
+            <Button
+                variant="contained"
+                color={user.isTwoFactorEnabled ? "warning" : "info"}
+                sx={{ mt: 2, ml: 2 }}
+                onClick={user.isTwoFactorEnabled ? handleDisable2FA : handleEnable2FA}
+            >
+                {user.isTwoFactorEnabled ? "Disable 2FA" : "Enable 2FA"}
             </Button>
 
             {/* 2FA Setup Dialog */}
@@ -165,6 +165,38 @@ function Profile() {
                 </DialogActions>
             </Dialog>
 
+            {/* Backup Codes Dialog */}
+            <Dialog open={backupCodes.length > 0} onClose={() => setBackupCodes([])}>
+                <DialogTitle>Backup Codes</DialogTitle>
+                <DialogContent>
+                    <DialogContentText>
+                        Save these codes securely. Each code can be used once:
+                    </DialogContentText>
+                    <Box sx={{ mt: 2 }}>
+                        {backupCodes.map((code, index) => (
+                            <Typography key={index} variant="body2">{code}</Typography>
+                        ))}
+                    </Box>
+                </DialogContent>
+                <DialogActions>
+                    <Button onClick={() => setBackupCodes([])}>Close</Button>
+                </DialogActions>
+            </Dialog>
+
+            {/* Disable 2FA Confirmation Dialog */}
+            <Dialog open={disable2FAOpen} onClose={() => setDisable2FAOpen(false)}>
+                <DialogTitle>Disable Two-Factor Authentication?</DialogTitle>
+                <DialogContent>
+                    <DialogContentText>
+                        Disabling 2FA reduces your account security. Are you sure?
+                    </DialogContentText>
+                </DialogContent>
+                <DialogActions>
+                    <Button onClick={() => setDisable2FAOpen(false)}>Cancel</Button>
+                    <Button onClick={confirmDisable2FA} color="warning">Disable</Button>
+                </DialogActions>
+            </Dialog>
+
             {/* Deactivate Account Dialog */}
             <Dialog
                 open={open}
@@ -177,7 +209,6 @@ function Profile() {
                     <DialogContentText id="alert-dialog-description">
                         Are you sure you want to deactivate your account? This action cannot be undone.
                     </DialogContentText>
-                    o
                 </DialogContent>
                 <DialogActions>
                     <Button onClick={handleClose} color="primary">
