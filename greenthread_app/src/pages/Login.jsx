@@ -66,7 +66,7 @@ function Login() {
     };
 
     const handleLoginSuccess = (res) => {
-        const userData = res.data[loginType.toLowerCase()];
+        const userData = res.data.user || res.data.admin;
         localStorage.setItem("accessToken", res.data.accessToken);
         setUser(userData);
 
