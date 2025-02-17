@@ -1,50 +1,41 @@
-import React, { useState, useEffect, useContext } from "react";
+﻿import React, { useState, useEffect } from "react";
 import { Box, Button, TextField, Typography, CircularProgress } from "@mui/material";
 import http from "../../http";
 import { useNavigate, useParams } from "react-router-dom";
 import { toast } from "react-toastify";
-import UserContext from "../../contexts/UserContext";
 
 const CreateRefundForm = () => {
-    const { user } = useContext(UserContext); // Get the logged-in user
-    const { orderID } = useParams(); // Get orderID from URL params
+    const { orderID } = useParams(); // ✅ Ensure we get orderID from the URL
     const navigate = useNavigate();
     const [loading, setLoading] = useState(false);
     const [reason, setReason] = useState("");
 
     useEffect(() => {
-        console.log("Order ID from URL:", orderID);
+        console.log("Order ID received:", orderID); // ✅ Debugging: Check if orderID is being retrieved correctly
     }, [orderID]);
 
-    const handleSubmit = async (e) => {
-        e.preventDefault();
-        setLoading(true);
-
-        if (!user) {
-            toast.error("You must be logged in to request a refund.");
-            setLoading(false);
+    const handleSubmit = async () => {
+        if (!reason.trim()) {
+            toast.error("Please provide a valid refund reason.");
             return;
         }
 
         if (!orderID) {
-            toast.error("Invalid Order ID. Please try again.");
-            setLoading(false);
+            toast.error("Invalid order. Cannot process refund.");
             return;
         }
 
+        setLoading(true);
         try {
-            const requestData = {
-                OrderID: parseInt(orderID, 10), // Ensure it's an integer
-                UserID: user.userID, // Pass the logged-in user ID
-                Reason: reason, // Include refund reason if required
-            };
+            await http.post("/api/Refund", { OrderID: parseInt(orderID), Reason: reason });
 
-            console.log("Request Data:", requestData);
+            // ✅ Show success message
+            toast.success("Refund successfully sent! Please wait for admin approval.");
 
-            const response = await http.post("/api/Refund", requestData);
+            setTimeout(() => {
+                navigate("/refunds");
+            }, 1500);
 
-            toast.success("Refund request submitted successfully!");
-            navigate("/orders"); // Redirect to Orders page
         } catch (error) {
             console.error("Refund Request Error:", error);
             toast.error(error.response?.data || "Failed to request refund.");
@@ -53,10 +44,11 @@ const CreateRefundForm = () => {
         }
     };
 
+
     return (
-        <Box sx={{ maxWidth: 500, mx: "auto", mt: 4, p: 3, boxShadow: 3, borderRadius: 2, backgroundColor: "white" }}>
+        <Box sx={{ maxWidth: 500, mx: "auto", mt: 4, p: 3, boxShadow: 2, borderRadius: 2, backgroundColor: "white" }}>
             <Typography variant="h5" sx={{ mb: 3 }}>Request Refund</Typography>
-            <Typography sx={{ mb: 2 }}>Refund for Order ID: {orderID}</Typography>
+            <Typography sx={{ mb: 2 }}>Refund for Order ID: {orderID || "Unknown"}</Typography>
             <TextField
                 label="Reason for Refund"
                 fullWidth

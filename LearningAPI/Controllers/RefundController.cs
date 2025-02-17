@@ -27,31 +27,41 @@ namespace LearningAPI.Controllers
             var refunds = await _context.Refunds
                 .Include(r => r.Order)
                 .Where(r => r.UserID == userId)
-                .OrderByDescending(r => r.RefundDate)
+                .OrderBy(r => r.RefundID)
+                .Select(r => new
+                {
+                    r.RefundID,
+                    r.OrderID,
+                    r.RefundAmount,
+                    r.RefundStatus,
+                    r.RefundDate,
+                    r.Reason // Ensure reason is returned
+                })
                 .ToListAsync();
 
             return Ok(refunds);
         }
 
+
         // ➕ POST Request a Refund
         [HttpPost, Authorize]
         public async Task<IActionResult> CreateRefund([FromBody] Refund refundRequest)
         {
+            if (refundRequest.OrderID == 0)
+                return BadRequest("Invalid OrderID. Please provide a valid order.");
+
             int userId = GetUserId();
 
             var order = await _context.Orders.FindAsync(refundRequest.OrderID);
             if (order == null)
                 return BadRequest("Order not found.");
 
-            // Ensure only completed orders can be refunded
             if (order.OrderStatus != OrderStatus.Completed)
                 return BadRequest("Only completed orders can be refunded.");
 
-            // Ensure user owns the order
             if (order.UserID != userId)
                 return Forbid("Unauthorized request.");
 
-            // Prevent duplicate refund requests
             var existingRefund = await _context.Refunds.FirstOrDefaultAsync(r => r.OrderID == refundRequest.OrderID);
             if (existingRefund != null)
                 return BadRequest("Refund already requested for this order.");
@@ -62,7 +72,8 @@ namespace LearningAPI.Controllers
                 OrderID = refundRequest.OrderID,
                 RefundAmount = order.GrandTotal,
                 RefundDate = DateTime.UtcNow,
-                RefundStatus = Refund.Refund_Status.Pending
+                RefundStatus = Refund.Refund_Status.Pending,
+                Reason = refundRequest.Reason ?? "No reason provided."
             };
 
             _context.Refunds.Add(newRefund);
@@ -70,6 +81,7 @@ namespace LearningAPI.Controllers
 
             return CreatedAtAction(nameof(GetUserRefunds), new { userId = userId }, newRefund);
         }
+
 
         // 🔄 PUT Approve or Reject Refund (Admin Only)
         [HttpPut("{id}/status"), Authorize(Roles = "Admin")]
@@ -117,5 +129,27 @@ namespace LearningAPI.Controllers
             var claim = User.Claims.FirstOrDefault(c => c.Type == ClaimTypes.NameIdentifier)?.Value;
             return int.TryParse(claim, out int userId) ? userId : 0;
         }
+
+        // 📋 GET All Refunds (Admin Only)
+        [HttpGet, Authorize(Roles = "Admin")]
+        public async Task<IActionResult> GetAllRefunds()
+        {
+            var refunds = await _context.Refunds
+                .Include(r => r.Order)
+                .OrderBy(r => r.RefundID)
+                .Select(r => new
+                {
+                    r.RefundID,
+                    r.OrderID,
+                    r.RefundAmount,
+                    r.RefundStatus,
+                    r.RefundDate,
+                    r.Reason
+                })
+                .ToListAsync();
+
+            return Ok(refunds);
+        }
+
     }
 }

@@ -89,10 +89,14 @@ function AdminDashboard() {
 
             // Fetch deliveries data
             http.get("/api/Delivery")
-                .then((res) => {
-                    setDeliveries(res.data);
-                })
+                .then((res) => { setDeliveries(res.data)})
                 .catch(() => toast.error("Failed to fetch delivery data."))
+                .finally(() => setLoading(false));
+
+            // Fetch refunds data
+            http.get("/api/Refund")
+                .then((res) => { setRefunds(res.data) })
+                .catch(() => toast.error("Failed to fetch refund data."))
                 .finally(() => setLoading(false));
         } else {
             // Redirect non-admin users
@@ -253,18 +257,16 @@ function AdminDashboard() {
         setUpdatedStatus(delivery.deliveryStatus);
     };
 
- 
 
-
-      const fetchDeliveries = async () => {
-        try {
-            const response = await http.get("/api/Delivery");
-            setDeliveries(response.data);
-        } catch (err) {
-            toast.error("Failed to fetch deliveries.");
-        } finally {
-            setLoading(false);
-        }
+    const fetchDeliveries = async () => {
+    try {
+        const response = await http.get("/api/Delivery");
+        setDeliveries(response.data);
+    } catch (err) {
+        toast.error("Failed to fetch deliveries.");
+    } finally {
+        setLoading(false);
+    }
     };
 
     const handleUpdateDeliveryAddress = async (id, newAddress) => {
@@ -310,7 +312,52 @@ function AdminDashboard() {
         }
     };
 
-   
+
+
+    const fetchRefundDetails = async (refundID, orderID) => {
+        setLoadingDetails(true);
+        try {
+            const response = await http.get(`/api/Order/${orderID}`);
+            const refund = refunds.find((r) => r.refundID === refundID);
+            setSelectedRefund({ ...response.data, refundReason: refund?.reason, refundID });
+        } catch (error) {
+            toast.error("Failed to load refund details.");
+        } finally {
+            setLoadingDetails(false);
+        }
+    };
+
+    const handleUpdateRefundStatus = async (refundID, newStatus) => {
+        try {
+            await http.put(`/api/Refund/${refundID}/status`, JSON.stringify(newStatus), {
+                headers: { "Content-Type": "application/json" },
+            });
+
+            toast.success(`Refund ${refundID} updated to ${newStatus}`);
+            setRefunds((prevRefunds) =>
+                prevRefunds.map((refund) =>
+                    refund.refundID === refundID ? { ...refund, refundStatus: newStatus } : refund
+                )
+            );
+        } catch (error) {
+            toast.error("Failed to update refund status.");
+        }
+    };
+
+    const handleDeleteRefund = async (refundID, refundStatus) => {
+        if (refundStatus !== "Rejected") {
+            toast.error("Only rejected refunds can be deleted.");
+            return;
+        }
+
+        try {
+            await http.delete(`/api/Refund/${refundID}`);
+            toast.success(`Refund ${refundID} deleted successfully.`);
+            setRefunds((prevRefunds) => prevRefunds.filter((refund) => refund.refundID !== refundID));
+        } catch (error) {
+            toast.error("Failed to delete refund.");
+        }
+    };
 
    
 
@@ -838,11 +885,8 @@ function AdminDashboard() {
                         </TableBody>
                     </Table>
                 </TableContainer>
-
-
              
-
-                // Dialog for Viewing/Editing Delivery
+                {/* Dialog for Viewing/Editing Delivery*/}
                 {selectedDelivery && (
                     <Dialog open={!!selectedDelivery} onClose={handleCloseDialog} fullWidth>
                         <DialogTitle sx={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
@@ -895,40 +939,173 @@ function AdminDashboard() {
                     </Dialog>
                 )}
 
-                
-
-
-             
-
                 {/* Refund List */}
                 <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mt: 4, mb: 2 }} ref={refundsSectionRef}>
                     <Typography variant="h5">
                         Refunds
                     </Typography>
                 </Box>
-                <TableContainer component={Paper}>
-                    <Table>
-                        <TableHead>
-                            <TableRow>
-                                <TableCell><strong>Refund ID</strong></TableCell>
-                                <TableCell><strong>User</strong></TableCell>
-                                <TableCell><strong>Grand Total</strong></TableCell>
-                                <TableCell><strong>Status</strong></TableCell>
-                                <TableCell><strong>Actions</strong></TableCell>
-                            </TableRow>
-                        </TableHead>
-                        <TableBody>
-                            nothing
-                        </TableBody>
-                    </Table>
-                </TableContainer>
+                {loading ? (
+                    <CircularProgress />
+                ) : refunds.length === 0 ? (
+                    <Typography sx={{ textAlign: "center", mt: 4 }}>No refunds found.</Typography>
+                ) : (
+                    <TableContainer component={Paper}>
+                        <Table>
+                            <TableHead>
+                                <TableRow>
+                                    <TableCell><strong>Refund ID</strong></TableCell>
+                                    <TableCell><strong>Order ID</strong></TableCell>
+                                    <TableCell><strong>Amount</strong></TableCell>
+                                    <TableCell><strong>Status</strong></TableCell>
+                                    <TableCell><strong>Requested Date</strong></TableCell>
+                                    <TableCell><strong>Actions</strong></TableCell>
+                                </TableRow>
+                            </TableHead>
+                            <TableBody>
+                                {refunds.map((refund) => (
+                                    <TableRow key={refund.refundID}>
+                                        <TableCell>{refund.refundID}</TableCell>
+                                        <TableCell>{refund.orderID}</TableCell>
+                                        <TableCell>${refund.refundAmount.toFixed(2)}</TableCell>
+                                        <TableCell>{new Date(refund.refundDate).toLocaleDateString()}</TableCell>
+                                        <TableCell>
+                                            <Select
+                                                value={refund.refundStatus}
+                                                onChange={(e) => handleUpdateRefundStatus(refund.refundID, e.target.value)}
+                                                size="small"
+                                                sx={{ width: "150px" }}
+                                            >
+                                                <MenuItem value="Pending">Pending</MenuItem>
+                                                <MenuItem value="Completed">Completed</MenuItem>
+                                                <MenuItem value="Rejected">Rejected</MenuItem>
+                                            </Select>
+                                        </TableCell>
+                                        <TableCell>
+                                            <Box sx={{ display: "flex", flexDirection: "column", gap: 1 }}>
+
+                                                <Button
+                                                    variant="contained"
+                                                    color="primary"
+                                                    onClick={() => fetchRefundDetails(refund.refundID, refund.orderID)}
+                                                >
+                                                    View Details
+                                                </Button>
+                                                <Button
+                                                    variant="contained"
+                                                    color="error"
+                                                    disabled={refund.refundStatus !== "Rejected"}
+                                                    onClick={() => handleDeleteRefund(refund.refundID, refund.refundStatus)}
+                                                >
+                                                    Delete
+                                                </Button>
+                                             </Box>
+                                        </TableCell>
+                                    </TableRow>
+                                ))}
+                            </TableBody>
+                        </Table>
+                    </TableContainer>
+                )}
+
+                {/* View Refund Details Dialog */}
+                {selectedRefunds && (
+                    <Dialog open onClose={() => setSelectedRefunds(null)} fullWidth maxWidth="md">
+                        <DialogTitle>Refund Details</DialogTitle>
+                        <DialogContent>
+                            {loadingDetails ? (
+                                <CircularProgress />
+                            ) : (
+                                <>
+                                    <Typography variant="h6" sx={{ mt: 2 }}>Refund Information</Typography>
+                                    <TableContainer component={Paper} sx={{ mt: 2 }}>
+                                        <Table>
+                                            <TableBody>
+                                                <TableRow>
+                                                    <TableCell><strong>Refund ID</strong></TableCell>
+                                                    <TableCell>{selectedRefunds.refundID}</TableCell>
+                                                </TableRow>
+                                                <TableRow>
+                                                    <TableCell><strong>Order ID</strong></TableCell>
+                                                    <TableCell>{selectedRefunds.orderID}</TableCell>
+                                                </TableRow>
+                                                <TableRow>
+                                                    <TableCell><strong>Reason</strong></TableCell>
+                                                    <TableCell>{selectedRefunds.refundReason || "No reason provided"}</TableCell>
+                                                </TableRow>
+                                                <TableRow>
+                                                    <TableCell><strong>Status</strong></TableCell>
+                                                    <TableCell>{selectedRefunds.orderStatus}</TableCell>
+                                                </TableRow>
+                                                <TableRow>
+                                                    <TableCell><strong>Refund Amount</strong></TableCell>
+                                                    <TableCell>${selectedRefunds.grandTotal.toFixed(2)}</TableCell>
+                                                </TableRow>
+                                            </TableBody>
+                                        </Table>
+                                    </TableContainer>
+
+                                    <Typography variant="h6" sx={{ mt: 2 }}>Order Items</Typography>
+                                    <TableContainer component={Paper} sx={{ mt: 2 }}>
+                                        <Table>
+                                            <TableHead>
+                                                <TableRow>
+                                                    <TableCell><strong>Product</strong></TableCell>
+                                                    <TableCell><strong>Original Price</strong></TableCell>
+                                                    <TableCell><strong>Discount %</strong></TableCell>
+                                                    <TableCell><strong>Discounted Price</strong></TableCell>
+                                                    <TableCell><strong>Quantity</strong></TableCell>
+                                                    <TableCell><strong>Total</strong></TableCell>
+                                                </TableRow>
+                                            </TableHead>
+                                            <TableBody>
+                                                {selectedRefunds.items.length > 0 ? (
+                                                    selectedRefunds.items.map((item, index) => {
+                                                        const price = item.price || 0;
+                                                        const discountPercentage = item.discountPercentage || 0;
+                                                        const discountedPrice = price * (1 - discountPercentage / 100);
+                                                        return (
+                                                            <TableRow key={index}>
+                                                                <TableCell>{item.productName}</TableCell>
+                                                                <TableCell>${price.toFixed(2)}</TableCell>
+                                                                <TableCell>{discountPercentage.toFixed(2)}%</TableCell>
+                                                                <TableCell>${discountedPrice.toFixed(2)}</TableCell>
+                                                                <TableCell>{item.quantity}</TableCell>
+                                                                <TableCell>${(discountedPrice * item.quantity).toFixed(2)}</TableCell>
+                                                            </TableRow>
+                                                        );
+                                                    })
+                                                ) : (
+                                                    <TableRow>
+                                                        <TableCell colSpan={6} align="center">No items in this order.</TableCell>
+                                                    </TableRow>
+                                                )}
+                                                <TableRow>
+                                                    <TableCell colSpan={5} align="right"><strong>Grand Total</strong></TableCell>
+                                                    <TableCell>
+                                                        <strong>
+                                                            ${selectedRefunds?.items?.reduce((total, item) => {
+                                                                const discountedPrice = item.price * (1 - (item.discountPercentage || 0) / 100);
+                                                                return total + discountedPrice * item.quantity;
+                                                            }, 0).toFixed(2) || "0"}
+                                                        </strong>
+                                                    </TableCell>
+                                                </TableRow>
+                                            </TableBody>
+                                        </Table>
+                                    </TableContainer>
+                                </>
+                            )}
+                        </DialogContent>
+                    </Dialog>
+                )}
 
                 {/* Empty state handling */}
-                {/*{deliveries.length === 0 && (*/}
-                {/*    <Typography sx={{ mt: 2 }} color="textSecondary">*/}
-                {/*        No deliveries available.*/}
-                {/*    </Typography>*/}
-                {/*)}*/}
+                {refunds.length === 0 && (
+                    <Typography sx={{ mt: 2 }} color="textSecondary">
+                        No refunds available.
+                    </Typography>
+                )}
 
                 <ToastContainer />
             </Box>

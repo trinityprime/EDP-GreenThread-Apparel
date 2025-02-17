@@ -6,15 +6,12 @@ namespace LearningAPI.Models
 {
     public class Refund
     {
-        [Key]
         public int RefundID { get; set; }
 
-        [Required]
         [ForeignKey("UserID")]
         public int UserID { get; set; }
         public virtual User? User { get; set; }
 
-        [Required]
         [ForeignKey("OrderID")]
         public int OrderID { get; set; }
         public virtual Order? Order { get; set; }
@@ -28,7 +25,10 @@ namespace LearningAPI.Models
         [Required]
         [JsonConverter(typeof(JsonStringEnumConverter))]
         public Refund_Status RefundStatus { get; set; }
-        public string? Reason { get; internal set; }
+
+        [Required]
+        [StringLength(500)]
+        public string? Reason { get; set; }
 
         public enum Refund_Status
         {
