@@ -59,44 +59,54 @@ namespace LearningAPI.Controllers
 			return CreatedAtAction(nameof(GetDeliveryById), new { id = delivery.DeliveryID }, delivery);
 		}
 
-		// 📝 PUT Update Delivery Address
-		[HttpPut("{id}/address")]
-		public async Task<IActionResult> UpdateDeliveryAddress(int id, [FromBody] string newAddress)
-		{
-			var delivery = await _context.Deliveries.FindAsync(id);
-			if (delivery == null)
-				return NotFound("Delivery not found.");
+        // 📝 PUT Update Delivery Address
 
-			if (string.IsNullOrWhiteSpace(newAddress) || newAddress.Length > 255)
-				return BadRequest("Invalid address. Ensure it is not empty and within 255 characters.");
 
-			delivery.Address = newAddress;
-			delivery.UpdatedAt = DateTime.UtcNow;
+        [HttpPut("{id}/status")]
+        public async Task<IActionResult> UpdateDeliveryStatus(int id, [FromBody] string newStatus)
+        {
+            var delivery = await _context.Deliveries.FindAsync(id);
+            if (delivery == null)
+                return NotFound("Delivery not found.");
 
-			await _context.SaveChangesAsync();
-			return Ok(new { message = "Address updated successfully." });
-		}
+            // Validate if the status exists in the enum
+            if (!Enum.TryParse(newStatus, out Delivery.Delivery_Status parsedStatus))
+                return BadRequest("Invalid delivery status.");
 
-		// 🔄 PUT Update Delivery Status
-		[HttpPut("{id}/status")]
-		public async Task<IActionResult> UpdateDeliveryStatus(int id, [FromBody] Delivery.Delivery_Status newStatus)
-		{
-			var delivery = await _context.Deliveries.FindAsync(id);
-			if (delivery == null)
-				return NotFound("Delivery not found.");
+            delivery.DeliveryStatus = parsedStatus;
+            delivery.UpdatedAt = DateTime.UtcNow;
 
-			if (!Enum.IsDefined(typeof(Delivery.Delivery_Status), newStatus))
-				return BadRequest("Invalid delivery status.");
+            await _context.SaveChangesAsync();
+            return Ok(new { message = $"Delivery status updated to {parsedStatus}." });
+        }
 
-			delivery.DeliveryStatus = newStatus;
-			delivery.UpdatedAt = DateTime.UtcNow;
 
-			await _context.SaveChangesAsync();
-			return Ok(new { message = $"Delivery status updated to {newStatus}." });
-		}
 
-		// 🗑️ DELETE Delivery
-		[HttpDelete("{id}")]
+        // 🔄 PUT Update Delivery Status
+        [HttpPut("{id}/status")]
+        public async Task<IActionResult> UpdateDeliveryStatus(int id, [FromBody] dynamic payload)
+        {
+            var delivery = await _context.Deliveries.FindAsync(id);
+            if (delivery == null)
+                return NotFound("Delivery not found.");
+
+            // Extract deliveryStatus from JSON payload
+            string statusString = payload.deliveryStatus?.ToString();
+
+            // Validate that the status exists in the enum
+            if (!Enum.TryParse(statusString, out Delivery.Delivery_Status newStatus))
+                return BadRequest("Invalid delivery status.");
+
+            delivery.DeliveryStatus = newStatus;
+            delivery.UpdatedAt = DateTime.UtcNow;
+
+            await _context.SaveChangesAsync();
+            return Ok(new { message = $"Delivery status updated to {newStatus}." });
+        }
+
+
+        // 🗑️ DELETE Delivery
+        [HttpDelete("{id}")]
 		public async Task<IActionResult> DeleteDelivery(int id)
 		{
 			var delivery = await _context.Deliveries.FindAsync(id);

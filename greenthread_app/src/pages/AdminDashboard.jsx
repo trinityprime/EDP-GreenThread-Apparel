@@ -262,12 +262,26 @@ function AdminDashboard() {
             await http.put(`/api/Delivery/${id}/status`, JSON.stringify(newStatus), {
                 headers: { "Content-Type": "application/json" },
             });
-            toast.success("Delivery status updated successfully.");
-            fetchDeliveries();
+
+            toast.success(`Delivery ${id} updated to ${newStatus}`);
+
+            // Refresh deliveries after updating
+            setDeliveries((prevDeliveries) =>
+                prevDeliveries.map((delivery) =>
+                    delivery.deliveryID === id
+                        ? { ...delivery, deliveryStatus: newStatus }
+                        : delivery
+                )
+            );
         } catch (err) {
             toast.error("Failed to update delivery status.");
+            console.error("Error updating delivery status:", err);
         }
     };
+
+
+
+
 
     const handleDeleteDelivery = async (id) => {
         try {
@@ -817,13 +831,8 @@ function AdminDashboard() {
                                     sx={{ mr: 2 }}
                                 />
                                 <Select
-                                    value={selectedDelivery.deliveryStatus}
-                                    onChange={(e) =>
-                                        handleUpdateDeliveryStatus(
-                                            selectedDelivery.deliveryID,
-                                            e.target.value
-                                        )
-                                    }
+                                    value={selectedDelivery?.deliveryStatus || "Pending"}
+                                    onChange={(e) => handleUpdateDeliveryStatus(selectedDelivery.deliveryID, e.target.value)}
                                     sx={{ width: "200px" }}
                                 >
                                     <MenuItem value="Pending">Pending</MenuItem>
@@ -831,6 +840,7 @@ function AdminDashboard() {
                                     <MenuItem value="Delivered">Delivered</MenuItem>
                                     <MenuItem value="Cancelled">Cancelled</MenuItem>
                                 </Select>
+
                             </Box>
                         </DialogContent>
                     </Dialog>
