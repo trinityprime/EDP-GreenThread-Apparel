@@ -7,6 +7,9 @@ import { QRCodeSVG } from "qrcode.react";
 
 function Profile() {
     const { user, setUser } = useContext(UserContext);
+    const [password, setPassword] = useState("");
+    const [openPasswordDialog, setOpenPasswordDialog] = useState(false);
+    const [actionType, setActionType] = useState(""); 
     const [open, setOpen] = useState(false);
     const [open2FA, setOpen2FA] = useState(false);
     const [qrData, setQrData] = useState(null);
@@ -36,24 +39,10 @@ function Profile() {
             });
     };
 
-    // Enable 2FA
-    const handleEnable2FA = () => {
-        axios.post("/api/2fa/enable", {}, {
-            headers: { Authorization: `Bearer ${localStorage.getItem("token")}` }
-        })
-            .then((response) => {
-                setQrData(response.data);
-                setOpen2FA(true);
-            })
-            .catch((error) => {
-                console.error("Error enabling 2FA:", error);
-                setError("Failed to enable 2FA. Please try again.");
-            });
-    };
 
     // Verify 2FA setup
     const handleVerify2FA = () => {
-        axios.post("/api/2fa/verify", { code: verificationCode }, {
+        axios.post("/api/2fa/verify", { password, code: verificationCode }, {
             headers: { Authorization: `Bearer ${localStorage.getItem("token")}` }
         })
             .then((res) => {
@@ -69,8 +58,40 @@ function Profile() {
             });
     };
 
-    const handleDisable2FA = () => {
-        setDisable2FAOpen(true);
+    const handlePasswordSubmit = () => {
+        if (actionType === "enable") {
+            axios.post("/api/2fa/enable", { password }, {
+                headers: { Authorization: `Bearer ${localStorage.getItem("token")}` }
+            })
+                .then((response) => {
+                    setQrData(response.data);
+                    setOpen2FA(true);
+                    setOpenPasswordDialog(false);
+                })
+                .catch((error) => {
+                    console.error("Error enabling 2FA:", error);
+                    setError("Invalid password or failed to enable 2FA.");
+                });
+        } else if (actionType === "disable") {
+            axios.post("/api/2fa/disable", { password }, {
+                headers: { Authorization: `Bearer ${localStorage.getItem("token")}` }
+            })
+                .then(() => {
+                    setUser({ ...user, isTwoFactorEnabled: false });
+                    setOpenPasswordDialog(false);
+                    alert("2FA has been disabled!");
+                })
+                .catch((error) => {
+                    console.error("Error disabling 2FA:", error);
+                    setError("Invalid password or failed to disable 2FA.");
+                });
+        }
+    };
+
+    const requestPassword = (type) => {
+        setActionType(type);
+        setPassword("");
+        setOpenPasswordDialog(true);
     };
 
     const confirmDisable2FA = () => {
@@ -128,10 +149,34 @@ function Profile() {
                 variant="contained"
                 color={user.isTwoFactorEnabled ? "warning" : "info"}
                 sx={{ mt: 2, ml: 2 }}
-                onClick={user.isTwoFactorEnabled ? handleDisable2FA : handleEnable2FA}
+                onClick={() => requestPassword(user.isTwoFactorEnabled ? "disable" : "enable")}
             >
                 {user.isTwoFactorEnabled ? "Disable 2FA" : "Enable 2FA"}
             </Button>
+
+            {/* Password Dialog */}
+            <Dialog open={openPasswordDialog} onClose={() => setOpenPasswordDialog(false)}>
+                <DialogTitle>Authenticate</DialogTitle>
+                <DialogContent>
+                    <DialogContentText>
+                        Please enter your password to {actionType === "enable" ? "enable" : "disable"} Two-Factor Authentication.
+                    </DialogContentText>
+                    <TextField
+                        fullWidth
+                        label="Password"
+                        type="password"
+                        value={password}
+                        onChange={(e) => setPassword(e.target.value)}
+                        sx={{ mt: 2 }}
+                    />
+                </DialogContent>
+                <DialogActions>
+                    <Button onClick={() => setOpenPasswordDialog(false)}>Cancel</Button>
+                    <Button onClick={handlePasswordSubmit} color="primary">
+                        Confirm
+                    </Button>
+                </DialogActions>
+            </Dialog>
 
             {/* 2FA Setup Dialog */}
             <Dialog open={open2FA} onClose={() => setOpen2FA(false)}>

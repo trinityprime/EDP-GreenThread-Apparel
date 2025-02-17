@@ -1,5 +1,5 @@
-import React, { useContext, useState } from 'react';
-import { Box, Typography, TextField, Button, Select, MenuItem, IconButton, InputAdornment } from '@mui/material';
+import React, { useContext, useState, useEffect, useRef } from 'react';
+import { Box, Typography, TextField, Button, Select, MenuItem, IconButton, InputAdornment, Grid } from '@mui/material';
 import { useNavigate, Link } from 'react-router-dom';
 import { useFormik } from 'formik';
 import * as yup from 'yup';
@@ -15,8 +15,12 @@ function Login() {
     const [loginType, setLoginType] = useState("User");
     const [showPassword, setShowPassword] = useState(false);
     const [requires2FA, setRequires2FA] = useState(false);
-    const [twoFACode, setTwoFACode] = useState("");
+    const [twoFACode, setTwoFACode] = useState(["", "", "", "", "", ""]);
     const [userEmail, setUserEmail] = useState("");
+    const [attempts, setAttempts] = useState(0);
+    const [isBlocked, setIsBlocked] = useState(false);
+    const [remainingTime, setRemainingTime] = useState(0);
+    const otpInputs = useRef([]);
 
     const formik = useFormik({
         initialValues: {
@@ -34,6 +38,11 @@ function Login() {
                 .required('Password is required')
         }),
         onSubmit: (data) => {
+            if (isBlocked) {
+                toast.error(`Too many attempts. Try again in ${remainingTime}s.`);
+                return;
+            }
+
             const endpoint = loginType === "Admin" ? "/admin/login" : "/user/login";
             data.email = data.email.trim().toLowerCase();
             data.password = data.password.trim();
@@ -41,7 +50,7 @@ function Login() {
             http.post(endpoint, data)
                 .then((res) => {
                     console.log("Login response:", res.data);
-                    if (res.data.requires2FA) { // bro this was the error the entire time no need caps for required WTFFFFFFFFFF
+                    if (res.data.requires2FA) { 
                         setRequires2FA(true);
                         setUserEmail(data.email);
                     } else {
@@ -53,17 +62,56 @@ function Login() {
         }
     });
 
-    const handle2FALogin = () => {
+    useEffect(() => {
+        if (attempts >= 5) {
+            setIsBlocked(true);
+            setRemainingTime(30);
+            toast.error("Too many attempts. Please try again in 30 seconds.");
+
+            const interval = setInterval(() => {
+                setRemainingTime((prev) => {
+                    if (prev <= 1) {
+                        clearInterval(interval);
+                        setIsBlocked(false);
+                        setAttempts(0);
+                        return 0;
+                    }
+                    return prev - 1;
+                });
+            }, 1000);
+        }
+    }, [attempts]);
+
+    const handleChange = (index, value) => {
+        if (/^[0-9]?$/.test(value)) {
+            const newCode = [...twoFACode];
+            newCode[index] = value;
+            setTwoFACode(newCode);
+
+            if (value && index < 5) {
+                otpInputs.current[index + 1].focus();
+            }
+
+            if (newCode.every((digit) => digit !== "")) {
+                handle2FALogin(newCode.join(""));
+            }
+        }
+    };
+
+    const handle2FALogin = (code) => {
         http.post("/api/2fa/verify-login", {
             email: userEmail,
-            code: twoFACode
+            code,
         })
             .then((res) => handleLoginSuccess(res))
             .catch((err) => {
-                toast.error("Invalid 2FA code. Please try again.");
+                toast.error("Invalid or expired 2FA code. Please try again.");
                 console.error("2FA verification failed:", err);
+                setTwoFACode(["", "", "", "", "", ""]);
+                otpInputs.current[0]?.focus();
             });
     };
+
 
     const handleLoginSuccess = (res) => {
         const userData = res.data.user || res.data.admin;
@@ -78,6 +126,8 @@ function Login() {
     };
 
     const handleLoginError = (err) => {
+        setAttempts(prev => prev + 1); 
+
         if (err.response) {
             toast.error(`${err.response.data.message}`);
         } else if (err.request) {
@@ -149,35 +199,18 @@ function Login() {
                 </>
             ) : (
                 // 2FA Verification Form
-                <Box component="form" sx={{ maxWidth: '500px' }}>
-                    <Typography variant="h6" sx={{ mb: 2 }}>
-                        Two-Factor Authentication Required
-                    </Typography>
-                    <TextField
-                        fullWidth
-                        margin="dense"
-                        label="6-digit Code"
-                        value={twoFACode}
-                        onChange={(e) => setTwoFACode(e.target.value)}
-                        inputProps={{ maxLength: 6 }}
-                    />
-                    <Button
-                        fullWidth
-                        variant="contained"
-                        sx={{ mt: 2 }}
-                        onClick={handle2FALogin}
-                    >
-                        Verify Code
-                    </Button>
-                    <Button
-                        fullWidth
-                        variant="outlined"
-                        sx={{ mt: 1 }}
-                        onClick={() => setRequires2FA(false)}
-                    >
-                        Back to Login
-                    </Button>
-                </Box>
+                    <Box sx={{ maxWidth: '500px' }}>
+                        <Typography variant="h6" sx={{ mb: 2 }}>Two-Factor Authentication Required</Typography>
+                        <Grid container spacing={1} justifyContent="center">
+                            {twoFACode.map((digit, index) => (
+                                <Grid item key={index}>
+                                    <TextField inputRef={(el) => (otpInputs.current[index] = el)} value={digit} onChange={(e) => handleChange(index, e.target.value)} variant="outlined" sx={{ width: 50, textAlign: "center" }} inputProps={{ maxLength: 1, style: { textAlign: "center", fontSize: "1.5rem" }, pattern: "[0-9]*", inputMode: "numeric" }} />
+                                </Grid>
+                            ))}
+                        </Grid>
+                        <Button fullWidth variant="contained" sx={{ mt: 2 }} onClick={handle2FALogin} disabled={isBlocked}>{isBlocked ? `Retry in ${remainingTime}s` : "Verify Code"}</Button>
+                        <Button fullWidth variant="outlined" sx={{ mt: 1 }} onClick={() => setRequires2FA(false)}>Back to Login</Button>
+                    </Box>
             )}
 
             {!requires2FA && (

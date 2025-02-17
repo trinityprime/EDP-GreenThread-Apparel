@@ -1,7 +1,11 @@
-﻿namespace LearningAPI.Models
+﻿using System.ComponentModel.DataAnnotations;
+
+namespace LearningAPI.Models
 {
     public class Enable2FARequest
     {
-        public string Code { get; set; } = string.Empty;
+		[Required]
+		public string Password { get; set; }
+		public string Code { get; set; } = string.Empty;
     }
 }

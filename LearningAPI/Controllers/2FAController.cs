@@ -9,6 +9,7 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.IdentityModel.Tokens;
 using System.IdentityModel.Tokens.Jwt;
 using System.Text;
+using Microsoft.AspNetCore.Identity;
 
 namespace LearningAPI.Controllers
 {
@@ -28,17 +29,23 @@ namespace LearningAPI.Controllers
 
 		// Generate 2FA secret and QR code
 		[HttpPost("enable")]
-		public IActionResult Enable2FA()
+		public IActionResult Enable2FA([FromBody] Enable2FARequest request)
 		{
 			var userEmail = User.FindFirstValue(ClaimTypes.Email);
 			var user = _context.Users.FirstOrDefault(u => u.Email == userEmail);
 			if (user == null) return Unauthorized();
 
+			// Verify Password
+			bool verified = BCrypt.Net.BCrypt.Verify(request.Password, user.Password);
+			if (!verified)
+			{
+				return BadRequest(new { message = "Invalid password." });
+			}
+
 			// Generate new secret key
 			var secretKey = KeyGeneration.GenerateRandomKey(20);
 			user.TwoFactorSecret = Base32Encoding.ToString(secretKey);
 
-			// Generate QR code URI
 			var issuer = _configuration["Jwt:Issuer"] ?? "GreenThreadApparel";
 			var qrCodeUri = $"otpauth://totp/{issuer}:{user.Email}?secret={user.TwoFactorSecret}&issuer={issuer}";
 
@@ -80,7 +87,7 @@ namespace LearningAPI.Controllers
 			return BadRequest("Invalid verification code");
 		}
 
-		// Verify 2FA during login
+		// verify 2fa during login
 		[HttpPost("verify-login")]
 		[AllowAnonymous]
 		public IActionResult Verify2FALogin([FromBody] Verify2FALoginRequest request)
@@ -94,66 +101,52 @@ namespace LearningAPI.Controllers
 			// Check if the code is a recovery code
 			if (user.RecoveryCodes.Contains(request.Code))
 			{
-				// Remove the used recovery code
 				user.RecoveryCodes.Remove(request.Code);
 				_context.SaveChanges();
-
-				var accessToken = CreateToken(user);
-				return Ok(new { AccessToken = accessToken });
 			}
-
-			// Verify TOTP code
-			var totp = new Totp(Base32Encoding.ToBytes(user.TwoFactorSecret));
-			bool isValid = totp.VerifyTotp(request.Code, out _);
-
-			if (isValid)
+			else
 			{
-				var accessToken = CreateToken(user);
-				if (user.Role == "Admin")
-				{
-					return Ok(new
-					{
-						admin = new
-						{
-							user.UserID,
-							user.Email,
-							user.FirstName,
-							user.LastName,
-							user.PostalCode,
-							user.Role,
-							user.IsTwoFactorEnabled
-						},
-						accessToken = accessToken
-					});
-				}
-				else
-				{
-					return Ok(new
-					{
-						user = new
-						{
-							user.UserID,
-							user.Email,
-							user.FirstName,
-							user.LastName,
-							user.PostalCode,
-							user.Role,
-							user.IsTwoFactorEnabled
-						},
-						accessToken = accessToken
-					});
-				}
+				// Verify TOTP code
+				var totp = new Totp(Base32Encoding.ToBytes(user.TwoFactorSecret));
+				if (!totp.VerifyTotp(request.Code, out _))
+					return BadRequest("Invalid 2FA code or recovery code");
 			}
-			return BadRequest("Invalid 2FA code or recovery code");
+
+			var accessToken = CreateToken(user);
+
+			// Return the user object properly
+			return Ok(new
+			{
+				user = new
+				{
+					user.UserID,
+					user.Email,
+					user.FirstName,
+					user.LastName,
+					user.PostalCode,
+					user.Role,
+					user.IsTwoFactorEnabled
+				},
+				accessToken
+			});
 		}
 
+
+		// disable 2fa
 		[HttpPost("disable")]
 		[Authorize]
-		public IActionResult Disable2FA()
+		public IActionResult Disable2FA([FromBody] Enable2FARequest request)
 		{
 			var userEmail = User.FindFirstValue(ClaimTypes.Email);
 			var user = _context.Users.FirstOrDefault(u => u.Email == userEmail);
 			if (user == null) return Unauthorized();
+
+			// Verify Password
+			bool verified = BCrypt.Net.BCrypt.Verify(request.Password, user.Password);
+			if (!verified)
+			{
+				return BadRequest(new { message = "Invalid password." });
+			}
 
 			// Reset 2FA settings
 			user.TwoFactorSecret = null;
@@ -199,16 +192,17 @@ namespace LearningAPI.Controllers
 			return token;
 		}
 
-		private List<string> GenerateRecoveryCodes()	
+		private List<string> GenerateRecoveryCodes()
 		{
-			// Generate 8 recovery codes (example implementation)
-			var codes = new List<string>();
+			var codes = new HashSet<string>();
 			var random = new Random();
-			for (int i = 0; i < 8; i++)
+
+			while (codes.Count < 8)
 			{
-				codes.Add($"{random.Next(10000000):00000000}");
+				codes.Add(random.Next(100000, 999999).ToString());
 			}
-			return codes;
+
+			return codes.ToList();
 		}
 	}
 }
