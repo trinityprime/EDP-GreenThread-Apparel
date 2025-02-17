@@ -243,6 +243,7 @@ function App() {
                             <Route path="/orders" element={<Order />} />
                             <Route path="/products" element={<Product />} />
                             <Route path="/create-product" element={<CreateProductForm />} />
+                            <Route path="/update-product/:id" element={<UpdateProductForm />} />
                             <Route path="/create-payment" element={<CreatePaymentForm />} /> 
                             <Route path="/payments" element={<Payment />} /> 
                             <Route path="/deliveries" element={<Delivery />} /> 
