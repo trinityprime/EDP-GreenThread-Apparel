@@ -95,9 +95,8 @@ function AdminDashboard() {
 
             // Fetch refunds data
             http.get("/api/Refund")
-                .then((res) => { setRefunds(res.data) })
-                .catch(() => toast.error("Failed to fetch refund data."))
-                .finally(() => setLoading(false));
+                .then((res) => setRefunds(res.data))
+                .catch(() => toast.error("Failed to fetch refund data."));
         } else {
             // Redirect non-admin users
             toast.error("You do not have admin permissions.");
@@ -324,8 +323,17 @@ function AdminDashboard() {
         }
     };
 
-
-    
+    const fetchRefundDetails = async (refundID) => {
+        setLoadingDetails(true);
+        try {
+            const response = await http.get(`/api/Refund/${refundID}`);
+            setSelectedRefunds(response.data);
+        } catch (err) {
+            toast.error("Failed to load refund details.");
+        } finally {
+            setLoadingDetails(false);
+        }
+    };
 
 
 
@@ -546,6 +554,12 @@ function AdminDashboard() {
                         </TableBody>
                     </Table>
                 </TableContainer>
+                {/* Empty state handling */}
+                {users.length === 0 && (
+                    <Typography sx={{ mt: 2 }} color="textSecondary">
+                        No users available.
+                    </Typography>
+                )}
 
                 {/* Manage Products */}
                 <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mt: 4, mb: 2 }} ref={productsSectionRef}>

@@ -41,7 +41,8 @@ namespace LearningAPI.Controllers
             return Ok(refunds);
         }
 
-        [HttpGet("{id}"), Authorize(Roles = "Admin")]
+        [HttpGet("{id}")]
+        [Authorize(Roles = "Admin")]
         public async Task<IActionResult> GetRefundById(int id)
         {
             var refund = await _context.Refunds
@@ -152,19 +153,22 @@ namespace LearningAPI.Controllers
         }
 
         // 🗑️ DELETE Refund (Only If Pending)
-        [HttpDelete("{id}"), Authorize]
+        [HttpDelete("{id}")]
+        [Authorize(Roles = "Admin")]
         public async Task<IActionResult> DeleteRefund(int id)
         {
             var refund = await _context.Refunds.FindAsync(id);
-            if (refund == null) return NotFound();
+            if (refund == null)
+                return NotFound("Refund not found.");
 
-            if (refund.RefundStatus != Refund.Refund_Status.Pending)
-                return BadRequest("Only pending refunds can be deleted.");
+            if (refund.RefundStatus != Refund.Refund_Status.Rejected)
+                return BadRequest("Only rejected refunds can be deleted.");
 
             _context.Refunds.Remove(refund);
             await _context.SaveChangesAsync();
             return NoContent();
         }
+
 
         // 🔍 Helper method to get the current user's ID
         private int GetUserId()
