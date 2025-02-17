@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useContext, useRef } from 'react';
-import { Box, Typography, Button, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Paper, Select, MenuItem, Dialog, DialogTitle, DialogContent, Drawer, List, ListItem, ListItemButton, ListItemText } from '@mui/material';
+import { Box, Typography, Button, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Paper, Select, MenuItem, Dialog, DialogTitle, DialogContent, TextField } from '@mui/material';
 import http from '../http';
 import { ToastContainer, toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
@@ -14,6 +14,8 @@ function AdminDashboard() {
     const [orders, setOrders] = useState([]);
     const [products, setProducts] = useState([]);
     const [selectedOrder, setSelectedOrder] = useState(null);
+    const [deliveries, setDeliveries] = useState([]);
+    const [selectedDelivery, setSelectedDelivery] = useState(null);
     const [loadingDetails, setLoadingDetails] = useState(false);
     const navigate = useNavigate();
     const [loading, setLoading] = useState(true); 
@@ -81,6 +83,14 @@ function AdminDashboard() {
             http.get("/api/Product")
                 .then((res) => setProducts(res.data))
                 .catch(() => toast.error("Failed to fetch product data."))
+                .finally(() => setLoading(false));
+
+            // Fetch deliveries data
+            http.get("/api/Delivery")
+                .then((res) => {
+                    setDeliveries(res.data);
+                })
+                .catch(() => toast.error("Failed to fetch delivery data."))
                 .finally(() => setLoading(false));
         } else {
             // Redirect non-admin users
@@ -232,6 +242,40 @@ function AdminDashboard() {
             setProducts((prev) => prev.filter((product) => product.productID !== id));
         } catch (err) {
             toast.error("Failed to delete product.");
+        }
+    };
+
+    const handleUpdateDeliveryAddress = async (id, newAddress) => {
+        try {
+            await http.put(`/api/Delivery/${id}/address`, newAddress, {
+                headers: { "Content-Type": "application/json" },
+            });
+            toast.success("Address updated successfully.");
+            fetchDeliveries();
+        } catch (err) {
+            toast.error("Failed to update address.");
+        }
+    };
+
+    const handleUpdateDeliveryStatus = async (id, newStatus) => {
+        try {
+            await http.put(`/api/Delivery/${id}/status`, JSON.stringify(newStatus), {
+                headers: { "Content-Type": "application/json" },
+            });
+            toast.success("Delivery status updated successfully.");
+            fetchDeliveries();
+        } catch (err) {
+            toast.error("Failed to update delivery status.");
+        }
+    };
+
+    const handleDeleteDelivery = async (id) => {
+        try {
+            await http.delete(`/api/Delivery/${id}`);
+            toast.success("Delivery deleted successfully.");
+            fetchDeliveries();
+        } catch (err) {
+            toast.error("Failed to delete delivery.");
         }
     };
 
@@ -702,29 +746,102 @@ function AdminDashboard() {
                         Deliveries 
                     </Typography>
                 </Box>
+                {/* Delivery Table */}
                 <TableContainer component={Paper}>
                     <Table>
                         <TableHead>
                             <TableRow>
                                 <TableCell><strong>Delivery ID</strong></TableCell>
-                                <TableCell><strong>User</strong></TableCell>
-                                <TableCell><strong>Grand Total</strong></TableCell>
+                                <TableCell><strong>Order ID</strong></TableCell>
+                                <TableCell><strong>Address</strong></TableCell>
                                 <TableCell><strong>Status</strong></TableCell>
                                 <TableCell><strong>Actions</strong></TableCell>
                             </TableRow>
                         </TableHead>
                         <TableBody>
-                            nothing
+                            {deliveries.length > 0 ? (
+                                deliveries.map((delivery) => (
+                                    <TableRow key={delivery.deliveryID}>
+                                        <TableCell>{delivery.deliveryID}</TableCell>
+                                        <TableCell>{delivery.orderID}</TableCell>
+                                        <TableCell>{delivery.address}</TableCell>
+                                        <TableCell>{delivery.deliveryStatus}</TableCell>
+                                        <TableCell>
+                                            <Button
+                                                variant="outlined"
+                                                onClick={() => setSelectedDelivery(delivery)}
+                                            >
+                                                View
+                                            </Button>
+                                            <Button
+                                                variant="contained"
+                                                color="error"
+                                                onClick={() => handleDeleteDelivery(delivery.deliveryID)}
+                                                sx={{ ml: 2 }}
+                                            >
+                                                Delete
+                                            </Button>
+                                        </TableCell>
+                                    </TableRow>
+                                ))
+                            ) : (
+                                <TableRow>
+                                    <TableCell colSpan={5} align="center">
+                                        No deliveries available.
+                                    </TableCell>
+                                </TableRow>
+                            )}
                         </TableBody>
                     </Table>
                 </TableContainer>
 
-                {/* Empty state handling */}
-                {/*{deliveries.length === 0 && (*/}
-                {/*    <Typography sx={{ mt: 2 }} color="textSecondary">*/}
-                {/*        No deliveries available.*/}
-                {/*    </Typography>*/}
-                {/*)}*/}
+                {/* Dialog for Viewing/Editing Delivery */}
+                {selectedDelivery && (
+                    <Dialog open={!!selectedDelivery} onClose={handleCloseDialog} fullWidth>
+                        <DialogTitle>Delivery Details</DialogTitle>
+                        <DialogContent>
+                            <Typography><strong>Order ID:</strong> {selectedDelivery.orderID}</Typography>
+                            <Typography><strong>Address:</strong> {selectedDelivery.address}</Typography>
+                            <Typography><strong>Status:</strong> {selectedDelivery.deliveryStatus}</Typography>
+
+                            <Box sx={{ mt: 2 }}>
+                                <TextField
+                                    label="Update Address"
+                                    defaultValue={selectedDelivery.address}
+                                    onBlur={(e) =>
+                                        handleUpdateDeliveryAddress(
+                                            selectedDelivery.deliveryID,
+                                            e.target.value
+                                        )
+                                    }
+                                    sx={{ mr: 2 }}
+                                />
+                                <Select
+                                    value={selectedDelivery.deliveryStatus}
+                                    onChange={(e) =>
+                                        handleUpdateDeliveryStatus(
+                                            selectedDelivery.deliveryID,
+                                            e.target.value
+                                        )
+                                    }
+                                    sx={{ width: "200px" }}
+                                >
+                                    <MenuItem value="Pending">Pending</MenuItem>
+                                    <MenuItem value="In_Transit">In Transit</MenuItem>
+                                    <MenuItem value="Delivered">Delivered</MenuItem>
+                                    <MenuItem value="Cancelled">Cancelled</MenuItem>
+                                </Select>
+                            </Box>
+                        </DialogContent>
+                    </Dialog>
+                )}
+
+                 Empty state handling 
+                {deliveries.length === 0 && (
+                    <Typography sx={{ mt: 2 }} color="textSecondary">
+                        No deliveries available.
+                    </Typography>
+                )}
 
                 {/* Refund List */}
                 <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mt: 4, mb: 2 }} ref={refundsSectionRef}>
