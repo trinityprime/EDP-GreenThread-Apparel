@@ -283,9 +283,11 @@ function AdminDashboard() {
 
     const handleUpdateDeliveryStatus = async (id, newStatus) => {
         try {
-            await http.put(`/api/Delivery/${id}/status`, newStatus, { // Send raw string
+            await http.put(`/api/Delivery/${id}/status`, JSON.stringify(newStatus), {
                 headers: { "Content-Type": "application/json" },
             });
+
+
 
             toast.success(`Delivery ${id} updated to ${newStatus}`);
             setDeliveries((prevDeliveries) =>
