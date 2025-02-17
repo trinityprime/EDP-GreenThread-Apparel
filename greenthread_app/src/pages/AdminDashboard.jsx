@@ -312,20 +312,18 @@ function AdminDashboard() {
         }
     };
 
-
-
-    const fetchRefundDetails = async (refundID, orderID) => {
+    const fetchRefundDetails = async (refundID) => {
         setLoadingDetails(true);
         try {
-            const response = await http.get(`/api/Order/${orderID}`);
-            const refund = refunds.find((r) => r.refundID === refundID);
-            setSelectedRefund({ ...response.data, refundReason: refund?.reason, refundID });
+            const response = await http.get(`/api/Refund/${refundID}`);
+            setSelectedRefund(response.data);
         } catch (error) {
             toast.error("Failed to load refund details.");
         } finally {
             setLoadingDetails(false);
         }
     };
+
 
     const handleUpdateRefundStatus = async (refundID, newStatus) => {
         try {
@@ -360,8 +358,6 @@ function AdminDashboard() {
     };
 
    
-
-
     // Check if the admin is the super admin
     const isSuperAdmin = (admin) => {
         return admin.adminID === 1 && admin.email === 'superadmin@greenthread.com';

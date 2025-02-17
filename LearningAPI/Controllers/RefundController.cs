@@ -20,6 +20,51 @@ namespace LearningAPI.Controllers
             _context = context;
         }
 
+        // 📋 GET All Refunds (Admin Only)
+        [HttpGet]
+        public async Task<IActionResult> GetAllRefunds()
+        {
+            var refunds = await _context.Refunds
+                .Include(r => r.Order)
+                .OrderBy(r => r.RefundID)
+                .Select(r => new
+                {
+                    r.RefundID,
+                    r.OrderID,
+                    r.RefundAmount,
+                    r.RefundStatus,
+                    r.RefundDate,
+                    r.Reason
+                })
+                .ToListAsync();
+
+            return Ok(refunds);
+        }
+
+        [HttpGet("{id}"), Authorize(Roles = "Admin")]
+        public async Task<IActionResult> GetRefundById(int id)
+        {
+            var refund = await _context.Refunds
+                .Include(r => r.Order)
+                .FirstOrDefaultAsync(r => r.RefundID == id);
+
+            if (refund == null)
+                return NotFound("Refund not found.");
+
+            var result = new
+            {
+                refund.RefundID,
+                refund.OrderID,
+                refund.RefundAmount,
+                refund.RefundStatus,
+                refund.RefundDate,
+                refund.Reason
+            };
+
+            return Ok(result);
+        }
+
+
         // 📋 GET Refunds for Logged-in User
         [HttpGet("user-refunds/{userId}"), Authorize]
         public async Task<IActionResult> GetUserRefunds(int userId)
@@ -35,13 +80,12 @@ namespace LearningAPI.Controllers
                     r.RefundAmount,
                     r.RefundStatus,
                     r.RefundDate,
-                    r.Reason // Ensure reason is returned
+                    r.Reason
                 })
                 .ToListAsync();
 
             return Ok(refunds);
         }
-
 
         // ➕ POST Request a Refund
         [HttpPost, Authorize]
@@ -81,7 +125,6 @@ namespace LearningAPI.Controllers
 
             return CreatedAtAction(nameof(GetUserRefunds), new { userId = userId }, newRefund);
         }
-
 
         // 🔄 PUT Approve or Reject Refund (Admin Only)
         [HttpPut("{id}/status"), Authorize(Roles = "Admin")]
@@ -129,27 +172,5 @@ namespace LearningAPI.Controllers
             var claim = User.Claims.FirstOrDefault(c => c.Type == ClaimTypes.NameIdentifier)?.Value;
             return int.TryParse(claim, out int userId) ? userId : 0;
         }
-
-        // 📋 GET All Refunds (Admin Only)
-        [HttpGet, Authorize(Roles = "Admin")]
-        public async Task<IActionResult> GetAllRefunds()
-        {
-            var refunds = await _context.Refunds
-                .Include(r => r.Order)
-                .OrderBy(r => r.RefundID)
-                .Select(r => new
-                {
-                    r.RefundID,
-                    r.OrderID,
-                    r.RefundAmount,
-                    r.RefundStatus,
-                    r.RefundDate,
-                    r.Reason
-                })
-                .ToListAsync();
-
-            return Ok(refunds);
-        }
-
     }
 }
