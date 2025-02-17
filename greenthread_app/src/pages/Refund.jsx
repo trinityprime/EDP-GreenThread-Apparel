@@ -132,34 +132,22 @@ function Refund() {
                             <CircularProgress />
                         ) : (
                             <>
-                                <Typography variant="h6" sx={{ mt: 2 }}>Refund Information</Typography>
+                                {/* Payment Details */}
+                                <Typography variant="h6" sx={{ mt: 2 }}>Payment Information</Typography>
                                 <TableContainer component={Paper} sx={{ mt: 2 }}>
                                     <Table>
                                         <TableBody>
                                             <TableRow>
-                                                <TableCell><strong>Refund ID</strong></TableCell>
-                                                <TableCell>{selectedRefund.refundID}</TableCell>
-                                            </TableRow>
-                                            <TableRow>
-                                                <TableCell><strong>Order ID</strong></TableCell>
-                                                <TableCell>{selectedRefund.orderID}</TableCell>
-                                            </TableRow>
-                                            <TableRow>
-                                                    <TableCell><strong>Reason</strong></TableCell>
-                                                    <TableCell>{selectedRefund.refundReason || "No reason provided"}</TableCell>
-                                            </TableRow>
-                                            <TableRow>
-                                                <TableCell><strong>Status</strong></TableCell>
-                                                <TableCell>{selectedRefund.orderStatus}</TableCell>
-                                            </TableRow>
-                                            <TableRow>
-                                                <TableCell><strong>Refund Amount</strong></TableCell>
-                                                <TableCell>${selectedRefund.grandTotal.toFixed(2)}</TableCell>
+                                                <TableCell><strong>Amount Paid</strong></TableCell>
+                                                    <TableCell sx={{ color: "red", fontWeight: "bold" }}>
+                                                        ${selectedRefund?.payment?.amountPaid?.toFixed(2) || "N/A"}
+                                                </TableCell>
                                             </TableRow>
                                         </TableBody>
                                     </Table>
                                 </TableContainer>
 
+                                {/* Order Items */}
                                 <Typography variant="h6" sx={{ mt: 2 }}>Order Items</Typography>
                                 <TableContainer component={Paper} sx={{ mt: 2 }}>
                                     <Table>
@@ -194,18 +182,18 @@ function Refund() {
                                                 <TableRow>
                                                     <TableCell colSpan={6} align="center">No items in this order.</TableCell>
                                                 </TableRow>
-                                                )}
-                                                <TableRow>
-                                                    <TableCell colSpan={5} align="right"><strong>Grand Total</strong></TableCell>
-                                                    <TableCell>
-                                                        <strong>
-                                                            ${selectedRefund?.items?.reduce((total, item) => {
-                                                                const discountedPrice = item.price * (1 - (item.discountPercentage || 0) / 100);
-                                                                return total + discountedPrice * item.quantity;
-                                                            }, 0).toFixed(2) || "0"}
-                                                        </strong>
-                                                    </TableCell>
-                                                </TableRow>
+                                            )}
+                                            <TableRow>
+                                                <TableCell colSpan={5} align="right"><strong>Grand Total</strong></TableCell>
+                                                <TableCell>
+                                                    <strong>
+                                                        ${selectedRefund?.items?.reduce((total, item) => {
+                                                            const discountedPrice = item.price * (1 - (item.discountPercentage || 0) / 100);
+                                                            return total + discountedPrice * item.quantity;
+                                                        }, 0).toFixed(2) || "0"}
+                                                    </strong>
+                                                </TableCell>
+                                            </TableRow>
                                         </TableBody>
                                     </Table>
                                 </TableContainer>

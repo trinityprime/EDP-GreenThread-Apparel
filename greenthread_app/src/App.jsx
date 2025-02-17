@@ -41,6 +41,7 @@ import CreateDeliveryForm from "./pages/components/CreateDeliveryForm";
 import Refund from "./pages/Refund";
 import CreateRefundForm from "./pages/components/CreateRefundForm";
 import HomeScreen from "./pages/HomeScreen";
+import Chatbot from "./pages/components/Chatbot";
 
 // Importing icons from MUI Icons
 import AccountCircle from "@mui/icons-material/AccountCircle";
@@ -241,6 +242,10 @@ function App() {
                             <Route path="/request-refund/:orderID" element={<CreateRefundForm />} />
                         </Routes>
                     </Container>
+
+                    {/* Chatbot component added here */}
+                    <Chatbot />
+
                 </ThemeProvider>
             </Router>
         </UserContext.Provider>

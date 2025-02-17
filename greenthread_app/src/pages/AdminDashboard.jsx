@@ -326,13 +326,28 @@ function AdminDashboard() {
         }
     };
 
-    const fetchRefundDetails = async (refundID) => {
+    const fetchRefundDetails = async (refundID, orderID) => {
         setLoadingDetails(true);
         try {
-            const response = await http.get(`/api/Refund/${refundID}`);
-            setSelectedRefunds(response.data);
-        } catch (err) {
+            // Fetch order details (includes items)
+            const orderResponse = await http.get(`/api/Order/${orderID}`);
+
+            // Find the matching refund in the existing state
+            const refundResponse = refunds.find(r => r.refundID === refundID);
+
+            console.log("Fetched Order Details:", orderResponse.data);
+            console.log("Fetched Refund Details:", refundResponse); // Debugging refund details
+
+            // Merge refund data with order details
+            setSelectedRefunds({
+                ...orderResponse.data,
+                refundID,
+                refundReason: refundResponse?.reason || "No reason provided",
+            });
+
+        } catch (error) {
             toast.error("Failed to load refund details.");
+            console.error("Error fetching refund details:", error);
         } finally {
             setLoadingDetails(false);
         }
@@ -381,7 +396,8 @@ function AdminDashboard() {
             {/* Left Navigation Box */}
             <Box
                 sx={{
-                    width: 200, // Thinner navigation
+                    width: 200, 
+                    height: 400, // adjust
                     backgroundColor: "#fff",
                     boxShadow: "0 2px 4px rgba(0, 0, 0, 0.1)", // Subtle shadow
                     border: "1px solid #e0e0e0", // Lighter border
@@ -520,16 +536,12 @@ function AdminDashboard() {
                         mb: 2,
                         px: 2,
                     }}
-                    ref={userSectionRef}  // Ensure you have this ref defined, or remove if not needed
+                    ref={userSectionRef}
                 >
                     <Typography variant="h5" fontWeight="bold" color="text.primary">
                         Users
                     </Typography>
-                    <Button
-                        variant="contained"
-                        color="primary"
-                        onClick={() => navigate('/create-user')}
-                    >
+                    <Button variant="contained" color="primary" onClick={() => navigate('/create-user')}>
                         Create User
                     </Button>
                 </Box>
@@ -546,54 +558,54 @@ function AdminDashboard() {
                             </TableRow>
                         </TableHead>
                         <TableBody>
-                            {users.map((user) => (
-                                <TableRow key={user.userID} hover>
-                                    <TableCell>{user.userID}</TableCell>
-                                    <TableCell>
-                                        {user.firstName} {user.lastName}
-                                    </TableCell>
-                                    <TableCell>{user.email}</TableCell>
-                                    <TableCell>{user.postalCode}</TableCell>
-                                    <TableCell>
-                                        <Typography
-                                            variant="body2"
-                                            fontWeight="medium"
-                                            color={user.isDeactivated ? 'error.main' : 'success.main'}
-                                        >
-                                            {user.isDeactivated ? 'Deactivated' : 'Active'}
-                                        </Typography>
-                                    </TableCell>
-                                    <TableCell>
-                                        <Box sx={{ display: 'flex', gap: 1 }}>
-                                            <Button
-                                                variant="contained"
-                                                size="small"
-                                                color="primary"
-                                                onClick={() => navigate(`/update-user/${user.userID}`)}
+                            {users.length > 0 ? (
+                                users.map((user) => (
+                                    <TableRow key={user.userID} hover>
+                                        <TableCell>{user.userID}</TableCell>
+                                        <TableCell>{user.firstName} {user.lastName}</TableCell>
+                                        <TableCell>{user.email}</TableCell>
+                                        <TableCell>{user.postalCode}</TableCell>
+                                        <TableCell>
+                                            <Typography
+                                                variant="body2"
+                                                fontWeight="medium"
+                                                color={user.isDeactivated ? 'error.main' : 'success.main'}
                                             >
-                                                Edit
-                                            </Button>
-                                            <Button
-                                                variant="contained"
-                                                size="small"
-                                                color="error"
-                                                onClick={() => handleToggleActivation(user.userID, 'user', user.isDeactivated)}
-                                            >
-                                                Deactivate
-                                            </Button>
-                                        </Box>
+                                                {user.isDeactivated ? 'Deactivated' : 'Active'}
+                                            </Typography>
+                                        </TableCell>
+                                        <TableCell>
+                                            <Box sx={{ display: 'flex', gap: 1 }}>
+                                                <Button
+                                                    variant="contained"
+                                                    size="small"
+                                                    color="primary"
+                                                    onClick={() => navigate(`/update-user/${user.userID}`)}
+                                                >
+                                                    Edit
+                                                </Button>
+                                                <Button
+                                                    variant="contained"
+                                                    size="small"
+                                                    color="error"
+                                                    onClick={() => handleToggleActivation(user.userID, 'user', user.isDeactivated)}
+                                                >
+                                                    Deactivate
+                                                </Button>
+                                            </Box>
+                                        </TableCell>
+                                    </TableRow>
+                                ))
+                            ) : (
+                                <TableRow>
+                                    <TableCell colSpan={6} align="center">
+                                        No users available.
                                     </TableCell>
                                 </TableRow>
-                            ))}
+                            )}
                         </TableBody>
                     </Table>
                 </TableContainer>
-                {users.length === 0 && (
-                    <Typography sx={{ mt: 2 }} color="textSecondary">
-                        No users available.
-                    </Typography>
-                )}
-
 
                 {/* Manage Products */}
                 <Box
@@ -610,11 +622,7 @@ function AdminDashboard() {
                     <Typography variant="h5" fontWeight="bold" color="text.primary">
                         Products
                     </Typography>
-                    <Button
-                        variant="contained"
-                        color="primary"
-                        onClick={() => navigate("/create-product")}
-                    >
+                    <Button variant="contained" color="primary" onClick={() => navigate("/create-product")}>
                         Create Product
                     </Button>
                 </Box>
@@ -631,51 +639,54 @@ function AdminDashboard() {
                             </TableRow>
                         </TableHead>
                         <TableBody>
-                            {products.map((product) => (
-                                <TableRow key={product.productID} hover>
-                                    <TableCell>{product.productID}</TableCell>
-                                    <TableCell>{product.productName}</TableCell>
-                                    <TableCell>${product.finalPrice.toFixed(2)}</TableCell>
-                                    <TableCell>{product.stock}</TableCell>
-                                    <TableCell>
-                                        <Typography
-                                            variant="body2"
-                                            fontWeight="medium"
-                                            color={product.status === "Active" ? 'success.main' : 'error.main'}
-                                        >
-                                            {product.status}
-                                        </Typography>
-                                    </TableCell>
-                                    <TableCell>
-                                        <Box sx={{ display: 'flex', gap: 1 }}>
-                                            <Button
-                                                variant="contained"
-                                                size="small"
-                                                color="primary"
-                                                onClick={() => navigate(`/update-product/${product.productID}`)}
+                            {products.length > 0 ? (
+                                products.map((product) => (
+                                    <TableRow key={product.productID} hover>
+                                        <TableCell>{product.productID}</TableCell>
+                                        <TableCell>{product.productName}</TableCell>
+                                        <TableCell>${product.finalPrice.toFixed(2)}</TableCell>
+                                        <TableCell>{product.stock}</TableCell>
+                                        <TableCell>
+                                            <Typography
+                                                variant="body2"
+                                                fontWeight="medium"
+                                                color={product.status === "Active" ? 'success.main' : 'error.main'}
                                             >
-                                                Edit
-                                            </Button>
-                                            <Button
-                                                variant="contained"
-                                                size="small"
-                                                color="error"
-                                                onClick={() => handleDeleteProduct(product.productID)}
-                                            >
-                                                Delete
-                                            </Button>
-                                        </Box>
+                                                {product.status}
+                                            </Typography>
+                                        </TableCell>
+                                        <TableCell>
+                                            <Box sx={{ display: 'flex', gap: 1 }}>
+                                                <Button
+                                                    variant="contained"
+                                                    size="small"
+                                                    color="primary"
+                                                    onClick={() => navigate(`/update-product/${product.productID}`)}
+                                                >
+                                                    Edit
+                                                </Button>
+                                                <Button
+                                                    variant="contained"
+                                                    size="small"
+                                                    color="error"
+                                                    onClick={() => handleDeleteProduct(product.productID)}
+                                                >
+                                                    Delete
+                                                </Button>
+                                            </Box>
+                                        </TableCell>
+                                    </TableRow>
+                                ))
+                            ) : (
+                                <TableRow>
+                                    <TableCell colSpan={6} align="center">
+                                        No products available.
                                     </TableCell>
                                 </TableRow>
-                            ))}
+                            )}
                         </TableBody>
                     </Table>
                 </TableContainer>
-                {products.length === 0 && (
-                    <Typography sx={{ mt: 2 }} color="textSecondary">
-                        No products available.
-                    </Typography>
-                )}
 
                 {/* Payment List */}
                 <Box
@@ -706,48 +717,51 @@ function AdminDashboard() {
                             </TableRow>
                         </TableHead>
                         <TableBody>
-                            {payments.map((payment) => (
-                                <TableRow key={payment.paymentID} hover>
-                                    <TableCell>{payment.paymentID}</TableCell>
-                                    <TableCell>{`${payment.user?.firstName} ${payment.user?.lastName}`}</TableCell>
-                                    <TableCell>${payment.amountPaid.toFixed(2)}</TableCell>
-                                    <TableCell>{payment.paymentMethod}</TableCell>
-                                    <TableCell>
-                                        <Select
-                                            value={payment.paymentStatus}
-                                            onChange={(e) => handleUpdatePaymentStatus(payment.paymentID, e.target.value)}
-                                            size="small"
-                                            sx={{ width: "130px" }}
-                                        >
-                                            <MenuItem value="Pending">Pending</MenuItem>
-                                            <MenuItem value="Completed">Completed</MenuItem>
-                                            <MenuItem value="Cancelled">Cancelled</MenuItem>
-                                            <MenuItem value="Failed">Failed</MenuItem>
-                                        </Select>
-                                    </TableCell>
-                                    <TableCell>
-                                        <Button
-                                            variant="contained"
-                                            color="error"
-                                            size="small"
-                                            disabled={payment.paymentStatus !== "Cancelled"}
-                                            onClick={() => handleDeletePayment(payment.paymentID, payment.paymentStatus)}
-                                        >
-                                            Delete
-                                        </Button>
+                            {payments.length > 0 ? (
+                                payments.map((payment) => (
+                                    <TableRow key={payment.paymentID} hover>
+                                        <TableCell>{payment.paymentID}</TableCell>
+                                        <TableCell>{`${payment.user?.firstName} ${payment.user?.lastName}`}</TableCell>
+                                        <TableCell>${payment.amountPaid.toFixed(2)}</TableCell>
+                                        <TableCell>{payment.paymentMethod}</TableCell>
+                                        <TableCell>
+                                            <Select
+                                                value={payment.paymentStatus}
+                                                onChange={(e) => handleUpdatePaymentStatus(payment.paymentID, e.target.value)}
+                                                size="small"
+                                                sx={{ width: "130px" }}
+                                            >
+                                                <MenuItem value="Pending">Pending</MenuItem>
+                                                <MenuItem value="Completed">Completed</MenuItem>
+                                                <MenuItem value="Cancelled">Cancelled</MenuItem>
+                                                <MenuItem value="Failed">Failed</MenuItem>
+                                            </Select>
+                                        </TableCell>
+                                        <TableCell>
+                                            <Button
+                                                variant="contained"
+                                                color="error"
+                                                size="small"
+                                                disabled={payment.paymentStatus !== "Cancelled"}
+                                                onClick={() => handleDeletePayment(payment.paymentID, payment.paymentStatus)}
+                                            >
+                                                Delete
+                                            </Button>
+                                        </TableCell>
+                                    </TableRow>
+                                ))
+                            ) : (
+                                <TableRow>
+                                    <TableCell colSpan={6} align="center">
+                                        No payments available.
                                     </TableCell>
                                 </TableRow>
-                            ))}
+                            )}
                         </TableBody>
                     </Table>
                 </TableContainer>
-                {payments.length === 0 && (
-                    <Typography sx={{ mt: 2 }} color="textSecondary">
-                        No payments available.
-                    </Typography>
-                )}
 
-                {/* Order List */}
+                {/* Orders Section */}
                 <Box
                     sx={{
                         display: 'flex',
@@ -775,53 +789,58 @@ function AdminDashboard() {
                             </TableRow>
                         </TableHead>
                         <TableBody>
-                            {orders.map((order) => (
-                                <TableRow key={order.orderID} hover>
-                                    <TableCell>{order.orderID}</TableCell>
-                                    <TableCell>{`${order.user?.firstName} ${order.user?.lastName}`}</TableCell>
-                                    <TableCell>${order.grandTotal.toFixed(2)}</TableCell>
-                                    <TableCell>
-                                        <Select
-                                            value={order.orderStatus}
-                                            onChange={(e) => handleUpdateOrderStatus(order.orderID, e.target.value)}
-                                            size="small"
-                                            sx={{ width: "130px" }}
-                                        >
-                                            <MenuItem value="Pending">Pending</MenuItem>
-                                            <MenuItem value="Completed">Completed</MenuItem>
-                                            <MenuItem value="Cancelled">Cancelled</MenuItem>
-                                        </Select>
-                                    </TableCell>
-                                    <TableCell>
-                                        <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
-                                            <Button
-                                                variant="outlined"
+                            {orders.length > 0 ? (
+                                orders.map((order) => (
+                                    <TableRow key={order.orderID} hover>
+                                        <TableCell>{order.orderID}</TableCell>
+                                        <TableCell>{`${order.user?.firstName} ${order.user?.lastName}`}</TableCell>
+                                        <TableCell>${order.grandTotal.toFixed(2)}</TableCell>
+                                        <TableCell>
+                                            <Select
+                                                value={order.orderStatus}
+                                                onChange={(e) => handleUpdateOrderStatus(order.orderID, e.target.value)}
                                                 size="small"
-                                                onClick={() => handleViewOrder(order.orderID)}
+                                                sx={{ width: "130px" }}
                                             >
-                                                View Order
-                                            </Button>
-                                            <Button
-                                                color="error"
-                                                variant="contained"
-                                                size="small"
-                                                disabled={order.orderStatus !== "Cancelled"}
-                                                onClick={() => handleDeleteOrder(order.orderID, order.orderStatus)}
-                                            >
-                                                Delete
-                                            </Button>
-                                        </Box>
+                                                <MenuItem value="Pending">Pending</MenuItem>
+                                                <MenuItem value="Completed">Completed</MenuItem>
+                                                <MenuItem value="Cancelled">Cancelled</MenuItem>
+                                            </Select>
+                                        </TableCell>
+                                        <TableCell>
+                                            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
+                                                <Button
+                                                    variant="outlined"
+                                                    size="small"
+                                                    onClick={() => handleViewOrder(order.orderID)}
+                                                >
+                                                    View Order
+                                                </Button>
+                                                <Button
+                                                    color="error"
+                                                    variant="contained"
+                                                    size="small"
+                                                    disabled={order.orderStatus !== "Cancelled"}
+                                                    onClick={() => handleDeleteOrder(order.orderID, order.orderStatus)}
+                                                >
+                                                    Delete
+                                                </Button>
+                                            </Box>
+                                        </TableCell>
+                                    </TableRow>
+                                ))
+                            ) : (
+                                <TableRow>
+                                    <TableCell colSpan={5} align="center">
+                                        No orders available.
                                     </TableCell>
                                 </TableRow>
-                            ))}
+                            )}
                         </TableBody>
                     </Table>
                 </TableContainer>
-                {orders.length === 0 && (
-                    <Typography sx={{ mt: 2 }} color="textSecondary">
-                        No orders available.
-                    </Typography>
-                )}
+
+
 
                 {/* Dialog for Viewing Order Details */}
                 {selectedOrder && (
@@ -1084,27 +1103,21 @@ function AdminDashboard() {
                         Refunds
                     </Typography>
                 </Box>
-                {loading ? (
-                    <CircularProgress />
-                ) : refunds.length === 0 ? (
-                    <Typography sx={{ textAlign: "center", mt: 4 }}>
-                        No refunds found.
-                    </Typography>
-                ) : (
-                    <TableContainer component={Paper} sx={{ borderRadius: 2, boxShadow: 3 }}>
-                        <Table>
-                            <TableHead sx={{ backgroundColor: 'primary.light' }}>
-                                <TableRow>
-                                    <TableCell sx={{ fontWeight: 'bold', color: 'white' }}>Refund ID</TableCell>
-                                    <TableCell sx={{ fontWeight: 'bold', color: 'white' }}>Order ID</TableCell>
-                                    <TableCell sx={{ fontWeight: 'bold', color: 'white' }}>Amount</TableCell>
-                                    <TableCell sx={{ fontWeight: 'bold', color: 'white' }}>Requested Date</TableCell>
-                                    <TableCell sx={{ fontWeight: 'bold', color: 'white' }}>Status</TableCell>
-                                    <TableCell sx={{ fontWeight: 'bold', color: 'white' }}>Actions</TableCell>
-                                </TableRow>
-                            </TableHead>
-                            <TableBody>
-                                {refunds.map((refund) => (
+                <TableContainer component={Paper} sx={{ borderRadius: 2, boxShadow: 3 }}>
+                    <Table>
+                        <TableHead sx={{ backgroundColor: 'primary.light' }}>
+                            <TableRow>
+                                <TableCell sx={{ fontWeight: 'bold', color: 'white' }}>Refund ID</TableCell>
+                                <TableCell sx={{ fontWeight: 'bold', color: 'white' }}>Order ID</TableCell>
+                                <TableCell sx={{ fontWeight: 'bold', color: 'white' }}>Amount</TableCell>
+                                <TableCell sx={{ fontWeight: 'bold', color: 'white' }}>Requested Date</TableCell>
+                                <TableCell sx={{ fontWeight: 'bold', color: 'white' }}>Status</TableCell>
+                                <TableCell sx={{ fontWeight: 'bold', color: 'white' }}>Actions</TableCell>
+                            </TableRow>
+                        </TableHead>
+                        <TableBody>
+                            {refunds.length > 0 ? (
+                                refunds.map((refund) => (
                                     <TableRow key={refund.refundID} hover>
                                         <TableCell>{refund.refundID}</TableCell>
                                         <TableCell>{refund.orderID}</TableCell>
@@ -1144,12 +1157,17 @@ function AdminDashboard() {
                                             </Box>
                                         </TableCell>
                                     </TableRow>
-                                ))}
-                            </TableBody>
-                        </Table>
-                    </TableContainer>
-                )}
-
+                                ))
+                            ) : (
+                                <TableRow>
+                                    <TableCell colSpan={6} align="center">
+                                        No refunds available.
+                                    </TableCell>
+                                </TableRow>
+                            )}
+                        </TableBody>
+                    </Table>
+                </TableContainer>
 
                 {/* View Refund Details Dialog */}
                 {selectedRefunds && (
@@ -1160,32 +1178,18 @@ function AdminDashboard() {
                                 <CircularProgress />
                             ) : (
                                 <>
-                                    <Typography variant="h6" sx={{ mt: 2 }}>Refund Information</Typography>
+                                    <Typography variant="h6" sx={{ mt: 2 }}>Payment Information</Typography>
                                     <TableContainer component={Paper} sx={{ mt: 2, borderRadius: 2, boxShadow: 3 }}>
-                                        <Table>
-                                            <TableBody>
-                                                <TableRow>
-                                                    <TableCell sx={{ fontWeight: 'bold' }}>Refund ID</TableCell>
-                                                    <TableCell>{selectedRefunds.refundID}</TableCell>
-                                                </TableRow>
-                                                <TableRow>
-                                                    <TableCell sx={{ fontWeight: 'bold' }}>Order ID</TableCell>
-                                                    <TableCell>{selectedRefunds.orderID}</TableCell>
-                                                </TableRow>
-                                                <TableRow>
-                                                    <TableCell sx={{ fontWeight: 'bold' }}>Reason</TableCell>
-                                                    <TableCell>{selectedRefunds.refundReason || "No reason provided"}</TableCell>
-                                                </TableRow>
-                                                <TableRow>
-                                                    <TableCell sx={{ fontWeight: 'bold' }}>Status</TableCell>
-                                                    <TableCell>{selectedRefunds.refundStatus}</TableCell>
-                                                </TableRow>
-                                                <TableRow>
-                                                    <TableCell sx={{ fontWeight: 'bold' }}>Refund Amount</TableCell>
-                                                    <TableCell>${selectedRefunds.refundAmount.toFixed(2)}</TableCell>
-                                                </TableRow>
-                                            </TableBody>
-                                        </Table>
+                                            <Table>
+                                                <TableBody>
+                                                    <TableRow>
+                                                        <TableCell><strong>Amount Paid</strong></TableCell>
+                                                        <TableCell sx={{ color: "red", fontWeight: "bold" }}>
+                                                            ${selectedRefunds?.payment?.amountPaid?.toFixed(2) || "N/A"}
+                                                        </TableCell>
+                                                    </TableRow>
+                                                </TableBody>
+                                            </Table>
                                     </TableContainer>
 
                                     <Typography variant="h6" sx={{ mt: 2 }}>Order Items</Typography>
@@ -1245,13 +1249,6 @@ function AdminDashboard() {
                             )}
                         </DialogContent>
                     </Dialog>
-                )}
-
-                {/* Empty state handling */}
-                {refunds.length === 0 && (
-                    <Typography sx={{ mt: 2 }} color="textSecondary">
-                        No refunds available.
-                    </Typography>
                 )}
 
                 <ToastContainer />

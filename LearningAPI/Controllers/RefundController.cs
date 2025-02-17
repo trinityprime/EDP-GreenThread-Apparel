@@ -41,6 +41,20 @@ namespace LearningAPI.Controllers
             return Ok(refunds);
         }
 
+        [HttpGet("order/{orderID}"), Authorize]
+        public async Task<IActionResult> GetRefundByOrderId(int orderID)
+        {
+            var refund = await _context.Refunds
+                .Where(r => r.OrderID == orderID)
+                .FirstOrDefaultAsync();
+
+            if (refund == null)
+                return NotFound("No refund found for this order.");
+
+            return Ok(refund);
+        }
+
+
         [HttpGet("{id}")]
         [Authorize(Roles = "Admin")]
         public async Task<IActionResult> GetRefundById(int id)
@@ -118,7 +132,7 @@ namespace LearningAPI.Controllers
                 RefundAmount = order.GrandTotal,
                 RefundDate = DateTime.UtcNow,
                 RefundStatus = Refund.Refund_Status.Pending,
-                Reason = refundRequest.Reason ?? "No reason provided."
+                Reason = string.IsNullOrWhiteSpace(refundRequest.Reason) ? "No reason provided." : refundRequest.Reason
             };
 
             _context.Refunds.Add(newRefund);

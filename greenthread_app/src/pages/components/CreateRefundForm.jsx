@@ -2,39 +2,69 @@
 import { Box, Button, TextField, Typography, CircularProgress } from "@mui/material";
 import http from "../../http";
 import { useNavigate, useParams } from "react-router-dom";
-import { toast } from "react-toastify";
+import { ToastContainer, toast } from "react-toastify";
 
 const CreateRefundForm = () => {
-    const { orderID } = useParams(); // ✅ Ensure we get orderID from the URL
+    const { orderID } = useParams(); // ✅ Get orderID from URL
     const navigate = useNavigate();
     const [loading, setLoading] = useState(false);
     const [reason, setReason] = useState("");
+    const [refundExists, setRefundExists] = useState(false); // ✅ Track if refund already exists
 
     useEffect(() => {
-        console.log("Order ID received:", orderID); // ✅ Debugging: Check if orderID is being retrieved correctly
+        console.log("Order ID received:", orderID);
+
+        // ✅ Check if refund already exists for this order
+        const checkExistingRefund = async () => {
+            try {
+                const response = await http.get(`/api/Refund/order/${orderID}`);
+                if (response.data) {
+                    setRefundExists(true);
+                }
+            } catch (error) {
+                if (error.response?.status === 404) {
+                    console.warn(`No refund found for order ${orderID}.`); // ✅ Handle missing refund
+                } else {
+                    console.error("Error checking existing refund:", error);
+                    toast.error("Failed to check existing refund.");
+                }
+            }
+        };
+
+        if (orderID) {
+            checkExistingRefund();
+        }
     }, [orderID]);
 
     const handleSubmit = async () => {
-        if (!reason.trim()) {
-            toast.error("Please provide a valid refund reason.");
-            return;
-        }
-
         if (!orderID) {
             toast.error("Invalid order. Cannot process refund.");
             return;
         }
 
+        // ✅ Require at least 3 characters for reason
+        if (reason.trim().length < 3) {
+            toast.error("Reason must be at least 3 characters long.");
+            return;
+        }
+
+        // ✅ Prevent duplicate refund requests
+        if (refundExists) {
+            toast.error(`You have already made a refund request for Order ${orderID}!`);
+            return; // ✅ Prevents navigation
+        }
+
         setLoading(true);
         try {
-            await http.post("/api/Refund", { OrderID: parseInt(orderID), Reason: reason });
+            await http.post("/api/Refund", {
+                OrderID: parseInt(orderID),
+                Reason: reason.trim()
+            });
 
-            // ✅ Show success message
-            toast.success("Refund successfully sent! Please wait for admin approval.");
-
-            setTimeout(() => {
-                navigate("/refunds");
-            }, 1500);
+            toast.success("Refund successfully sent! Please wait for admin approval.", {
+                onClose: () => navigate("/refunds"),
+                autoClose: 2000
+            });
 
         } catch (error) {
             console.error("Refund Request Error:", error);
@@ -44,11 +74,11 @@ const CreateRefundForm = () => {
         }
     };
 
-
     return (
         <Box sx={{ maxWidth: 500, mx: "auto", mt: 4, p: 3, boxShadow: 2, borderRadius: 2, backgroundColor: "white" }}>
             <Typography variant="h5" sx={{ mb: 3 }}>Request Refund</Typography>
             <Typography sx={{ mb: 2 }}>Refund for Order ID: {orderID || "Unknown"}</Typography>
+
             <TextField
                 label="Reason for Refund"
                 fullWidth
@@ -63,10 +93,12 @@ const CreateRefundForm = () => {
                 color="primary"
                 fullWidth
                 onClick={handleSubmit}
-                disabled={loading}
+                disabled={loading || reason.trim().length < 3}
             >
                 {loading ? <CircularProgress size={24} /> : "Submit Refund Request"}
             </Button>
+
+            <ToastContainer position="top-right" autoClose={2000} />
         </Box>
     );
 };
