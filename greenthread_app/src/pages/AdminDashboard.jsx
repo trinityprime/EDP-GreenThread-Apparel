@@ -16,6 +16,8 @@ function AdminDashboard() {
     const [selectedOrder, setSelectedOrder] = useState(null);
     const [deliveries, setDeliveries] = useState([]);
     const [selectedDelivery, setSelectedDelivery] = useState(null);
+    const [refunds, setRefunds] = useState([]);
+    const [selectedRefunds, setSelectedRefunds] = useState(null);
     const [loadingDetails, setLoadingDetails] = useState(false);
     const navigate = useNavigate();
     const [loading, setLoading] = useState(true); 
@@ -87,11 +89,14 @@ function AdminDashboard() {
 
             // Fetch deliveries data
             http.get("/api/Delivery")
-                .then((res) => {
-                    setDeliveries(res.data);
-                })
+                .then((res) => { setDeliveries(res.data)})
                 .catch(() => toast.error("Failed to fetch delivery data."))
                 .finally(() => setLoading(false));
+
+            // Fetch refunds data
+            http.get("/api/Refund")
+                .then((res) => setRefunds(res.data))
+                .catch(() => toast.error("Failed to fetch refund data."));
         } else {
             // Redirect non-admin users
             toast.error("You do not have admin permissions.");
@@ -245,40 +250,128 @@ function AdminDashboard() {
         }
     };
 
+    const handleViewDelivery = (delivery) => {
+        setSelectedDelivery(delivery);
+        setUpdatedAddress(delivery.address);
+        setUpdatedStatus(delivery.deliveryStatus);
+    };
+
+
+    const fetchDeliveries = async () => {
+    try {
+        const response = await http.get("/api/Delivery");
+        setDeliveries(response.data);
+    } catch (err) {
+        toast.error("Failed to fetch deliveries.");
+    } finally {
+        setLoading(false);
+    }
+    };
+
     const handleUpdateDeliveryAddress = async (id, newAddress) => {
         try {
-            await http.put(`/api/Delivery/${id}/address`, newAddress, {
-                headers: { "Content-Type": "application/json" },
-            });
+            console.log("Updating delivery address:", { id, newAddress }); // Debugging log
+
+            await http.put(`/api/Delivery/${id}/address`,
+                { newAddress }, // Send as JSON object
+                { headers: { "Content-Type": "application/json" } }
+            );
+
             toast.success("Address updated successfully.");
             fetchDeliveries();
         } catch (err) {
-            toast.error("Failed to update address.");
+            console.error("Failed to update address:", err.response?.data);
+            toast.error(`Failed to update address: ${err.response?.data || "Unknown error"}`);
         }
     };
 
     const handleUpdateDeliveryStatus = async (id, newStatus) => {
         try {
-            await http.put(`/api/Delivery/${id}/status`, JSON.stringify(newStatus), {
-                headers: { "Content-Type": "application/json" },
-            });
-            toast.success("Delivery status updated successfully.");
-            fetchDeliveries();
+            console.log("Updating delivery status:", { id, newStatus }); // Debugging log
+
+            await http.put(`/api/Delivery/${id}/status`,
+                { NewStatus: newStatus }, // Send as JSON object
+                { headers: { "Content-Type": "application/json" } }
+            );
+
+            toast.success(`Delivery ${id} updated to ${newStatus}`);
+            setDeliveries((prevDeliveries) =>
+                prevDeliveries.map((delivery) =>
+                    delivery.deliveryID === id
+                        ? { ...delivery, deliveryStatus: newStatus }
+                        : delivery
+                )
+            );
         } catch (err) {
-            toast.error("Failed to update delivery status.");
+            console.error("Error updating delivery status:", err.response?.data);
+            toast.error(`Failed to update delivery status: ${err.response?.data || "Unknown error"}`);
         }
     };
 
     const handleDeleteDelivery = async (id) => {
         try {
-            await http.delete(`/api/Delivery/${id}`);
+            console.log("Deleting delivery:", id); // Debugging log
+
+            const response = await http.delete(`/api/Delivery/${id}`);
+            console.log("Delete response:", response); // Log response
+
             toast.success("Delivery deleted successfully.");
             fetchDeliveries();
         } catch (err) {
-            toast.error("Failed to delete delivery.");
+            console.error("Failed to delete delivery:", err.response?.data);
+            toast.error(`Failed to delete delivery: ${err.response?.data || "Unknown error"}`);
         }
     };
 
+    const fetchRefundDetails = async (refundID) => {
+        setLoadingDetails(true);
+        try {
+            const response = await http.get(`/api/Refund/${refundID}`);
+            setSelectedRefunds(response.data);
+        } catch (err) {
+            toast.error("Failed to load refund details.");
+        } finally {
+            setLoadingDetails(false);
+        }
+    };
+
+
+
+
+
+    const handleUpdateRefundStatus = async (refundID, newStatus) => {
+        try {
+            await http.put(`/api/Refund/${refundID}/status`, JSON.stringify(newStatus), {
+                headers: { "Content-Type": "application/json" },
+            });
+
+            toast.success(`Refund ${refundID} updated to ${newStatus}`);
+            setRefunds((prevRefunds) =>
+                prevRefunds.map((refund) =>
+                    refund.refundID === refundID ? { ...refund, refundStatus: newStatus } : refund
+                )
+            );
+        } catch (error) {
+            toast.error("Failed to update refund status.");
+        }
+    };
+
+    const handleDeleteRefund = async (refundID, refundStatus) => {
+        if (refundStatus !== "Rejected") {
+            toast.error("Only rejected refunds can be deleted.");
+            return;
+        }
+
+        try {
+            await http.delete(`/api/Refund/${refundID}`);
+            toast.success(`Refund ${refundID} deleted successfully.`);
+            setRefunds((prevRefunds) => prevRefunds.filter((refund) => refund.refundID !== refundID));
+        } catch (error) {
+            toast.error("Failed to delete refund.");
+        }
+    };
+
+   
     // Check if the admin is the super admin
     const isSuperAdmin = (admin) => {
         return admin.adminID === 1 && admin.email === 'superadmin@greenthread.com';
@@ -461,6 +554,12 @@ function AdminDashboard() {
                         </TableBody>
                     </Table>
                 </TableContainer>
+                {/* Empty state handling */}
+                {users.length === 0 && (
+                    <Typography sx={{ mt: 2 }} color="textSecondary">
+                        No users available.
+                    </Typography>
+                )}
 
                 {/* Manage Products */}
                 <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mt: 4, mb: 2 }} ref={productsSectionRef}>
@@ -743,16 +842,17 @@ function AdminDashboard() {
                 {/* Delivery List */}
                 <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mt: 4, mb: 2 }} ref={deliveriesSectionRef}>
                     <Typography variant="h5">
-                        Deliveries 
+                        Deliveries
                     </Typography>
                 </Box>
-                {/* Delivery Table */}
+
                 <TableContainer component={Paper}>
                     <Table>
                         <TableHead>
                             <TableRow>
                                 <TableCell><strong>Delivery ID</strong></TableCell>
                                 <TableCell><strong>Order ID</strong></TableCell>
+                               
                                 <TableCell><strong>Address</strong></TableCell>
                                 <TableCell><strong>Status</strong></TableCell>
                                 <TableCell><strong>Actions</strong></TableCell>
@@ -764,15 +864,22 @@ function AdminDashboard() {
                                     <TableRow key={delivery.deliveryID}>
                                         <TableCell>{delivery.deliveryID}</TableCell>
                                         <TableCell>{delivery.orderID}</TableCell>
+                                       
                                         <TableCell>{delivery.address}</TableCell>
-                                        <TableCell>{delivery.deliveryStatus}</TableCell>
                                         <TableCell>
-                                            <Button
-                                                variant="outlined"
-                                                onClick={() => setSelectedDelivery(delivery)}
+                                            <Select
+                                                value={delivery.deliveryStatus}
+                                                onChange={(e) => handleUpdateDeliveryStatus(delivery.deliveryID, e.target.value)}
+                                                size="small"
+                                                sx={{ width: "150px" }}
                                             >
-                                                View
-                                            </Button>
+                                                <MenuItem value="Pending">Pending</MenuItem>
+                                                <MenuItem value="In_Transit">In Transit</MenuItem>
+                                                <MenuItem value="Delivered">Delivered</MenuItem>
+                                                <MenuItem value="Cancelled">Cancelled</MenuItem>
+                                            </Select>
+                                        </TableCell>
+                                        <TableCell>
                                             <Button
                                                 variant="contained"
                                                 color="error"
@@ -786,7 +893,7 @@ function AdminDashboard() {
                                 ))
                             ) : (
                                 <TableRow>
-                                    <TableCell colSpan={5} align="center">
+                                    <TableCell colSpan={6} align="center">
                                         No deliveries available.
                                     </TableCell>
                                 </TableRow>
@@ -794,53 +901,58 @@ function AdminDashboard() {
                         </TableBody>
                     </Table>
                 </TableContainer>
-
-                {/* Dialog for Viewing/Editing Delivery */}
+             
+                {/* Dialog for Viewing/Editing Delivery*/}
                 {selectedDelivery && (
                     <Dialog open={!!selectedDelivery} onClose={handleCloseDialog} fullWidth>
-                        <DialogTitle>Delivery Details</DialogTitle>
+                        <DialogTitle sx={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                            Delivery Details
+                            <Button onClick={handleCloseDialog} sx={{ minWidth: "auto", color: "red", fontSize: "18px" }}>
+                                
+                            </Button>
+                        </DialogTitle>
                         <DialogContent>
                             <Typography><strong>Order ID:</strong> {selectedDelivery.orderID}</Typography>
-                            <Typography><strong>Address:</strong> {selectedDelivery.address}</Typography>
-                            <Typography><strong>Status:</strong> {selectedDelivery.deliveryStatus}</Typography>
 
                             <Box sx={{ mt: 2 }}>
                                 <TextField
                                     label="Update Address"
-                                    defaultValue={selectedDelivery.address}
-                                    onBlur={(e) =>
-                                        handleUpdateDeliveryAddress(
-                                            selectedDelivery.deliveryID,
-                                            e.target.value
-                                        )
-                                    }
-                                    sx={{ mr: 2 }}
+                                    value={updatedAddress}
+                                    onChange={(e) => setUpdatedAddress(e.target.value)}
+                                    sx={{ width: "100%", mb: 2 }}
                                 />
+                                <Button
+                                    variant="contained"
+                                    color="primary"
+                                    onClick={() => handleUpdateDeliveryAddress(selectedDelivery.deliveryID, updatedAddress)}
+                                    disabled={!updatedAddress || updatedAddress === selectedDelivery.address}
+                                >
+                                    Confirm Address Update
+                                </Button>
+                            </Box>
+
+                            <Box sx={{ mt: 2 }}>
                                 <Select
-                                    value={selectedDelivery.deliveryStatus}
-                                    onChange={(e) =>
-                                        handleUpdateDeliveryStatus(
-                                            selectedDelivery.deliveryID,
-                                            e.target.value
-                                        )
-                                    }
-                                    sx={{ width: "200px" }}
+                                    value={updatedStatus}
+                                    onChange={(e) => setUpdatedStatus(e.target.value)}
+                                    sx={{ width: "100%", mb: 2 }}
                                 >
                                     <MenuItem value="Pending">Pending</MenuItem>
                                     <MenuItem value="In_Transit">In Transit</MenuItem>
                                     <MenuItem value="Delivered">Delivered</MenuItem>
                                     <MenuItem value="Cancelled">Cancelled</MenuItem>
                                 </Select>
+                                <Button
+                                    variant="contained"
+                                    color="primary"
+                                    onClick={() => handleUpdateDeliveryStatus(selectedDelivery.deliveryID, updatedStatus)}
+                                    disabled={!updatedStatus || updatedStatus === selectedDelivery.deliveryStatus}
+                                >
+                                    Confirm Status Update
+                                </Button>
                             </Box>
                         </DialogContent>
                     </Dialog>
-                )}
-
-                 Empty state handling 
-                {deliveries.length === 0 && (
-                    <Typography sx={{ mt: 2 }} color="textSecondary">
-                        No deliveries available.
-                    </Typography>
                 )}
 
                 {/* Refund List */}
@@ -849,29 +961,167 @@ function AdminDashboard() {
                         Refunds
                     </Typography>
                 </Box>
-                <TableContainer component={Paper}>
-                    <Table>
-                        <TableHead>
-                            <TableRow>
-                                <TableCell><strong>Refund ID</strong></TableCell>
-                                <TableCell><strong>User</strong></TableCell>
-                                <TableCell><strong>Grand Total</strong></TableCell>
-                                <TableCell><strong>Status</strong></TableCell>
-                                <TableCell><strong>Actions</strong></TableCell>
-                            </TableRow>
-                        </TableHead>
-                        <TableBody>
-                            nothing
-                        </TableBody>
-                    </Table>
-                </TableContainer>
+                {loading ? (
+                    <CircularProgress />
+                ) : refunds.length === 0 ? (
+                    <Typography sx={{ textAlign: "center", mt: 4 }}>No refunds found.</Typography>
+                ) : (
+                    <TableContainer component={Paper}>
+                        <Table>
+                            <TableHead>
+                                <TableRow>
+                                    <TableCell><strong>Refund ID</strong></TableCell>
+                                    <TableCell><strong>Order ID</strong></TableCell>
+                                    <TableCell><strong>Amount</strong></TableCell>
+                                    <TableCell><strong>Status</strong></TableCell>
+                                    <TableCell><strong>Requested Date</strong></TableCell>
+                                    <TableCell><strong>Actions</strong></TableCell>
+                                </TableRow>
+                            </TableHead>
+                            <TableBody>
+                                {refunds.map((refund) => (
+                                    <TableRow key={refund.refundID}>
+                                        <TableCell>{refund.refundID}</TableCell>
+                                        <TableCell>{refund.orderID}</TableCell>
+                                        <TableCell>${refund.refundAmount.toFixed(2)}</TableCell>
+                                        <TableCell>{new Date(refund.refundDate).toLocaleDateString()}</TableCell>
+                                        <TableCell>
+                                            <Select
+                                                value={refund.refundStatus}
+                                                onChange={(e) => handleUpdateRefundStatus(refund.refundID, e.target.value)}
+                                                size="small"
+                                                sx={{ width: "150px" }}
+                                            >
+                                                <MenuItem value="Pending">Pending</MenuItem>
+                                                <MenuItem value="Completed">Completed</MenuItem>
+                                                <MenuItem value="Rejected">Rejected</MenuItem>
+                                            </Select>
+                                        </TableCell>
+                                        <TableCell>
+                                            <Box sx={{ display: "flex", flexDirection: "column", gap: 1 }}>
+
+                                                <Button
+                                                    variant="contained"
+                                                    color="primary"
+                                                    onClick={() => fetchRefundDetails(refund.refundID, refund.orderID)}
+                                                >
+                                                    View Details
+                                                </Button>
+                                                <Button
+                                                    variant="contained"
+                                                    color="error"
+                                                    disabled={refund.refundStatus !== "Rejected"}
+                                                    onClick={() => handleDeleteRefund(refund.refundID, refund.refundStatus)}
+                                                >
+                                                    Delete
+                                                </Button>
+                                             </Box>
+                                        </TableCell>
+                                    </TableRow>
+                                ))}
+                            </TableBody>
+                        </Table>
+                    </TableContainer>
+                )}
+
+                {/* View Refund Details Dialog */}
+                {selectedRefunds && (
+                    <Dialog open onClose={() => setSelectedRefunds(null)} fullWidth maxWidth="md">
+                        <DialogTitle>Refund Details</DialogTitle>
+                        <DialogContent>
+                            {loadingDetails ? (
+                                <CircularProgress />
+                            ) : (
+                                <>
+                                    <Typography variant="h6" sx={{ mt: 2 }}>Refund Information</Typography>
+                                    <TableContainer component={Paper} sx={{ mt: 2 }}>
+                                        <Table>
+                                            <TableBody>
+                                                <TableRow>
+                                                    <TableCell><strong>Refund ID</strong></TableCell>
+                                                    <TableCell>{selectedRefunds.refundID}</TableCell>
+                                                </TableRow>
+                                                <TableRow>
+                                                    <TableCell><strong>Order ID</strong></TableCell>
+                                                    <TableCell>{selectedRefunds.orderID}</TableCell>
+                                                </TableRow>
+                                                <TableRow>
+                                                    <TableCell><strong>Reason</strong></TableCell>
+                                                    <TableCell>{selectedRefunds.refundReason || "No reason provided"}</TableCell>
+                                                </TableRow>
+                                                <TableRow>
+                                                    <TableCell><strong>Status</strong></TableCell>
+                                                    <TableCell>{selectedRefunds.orderStatus}</TableCell>
+                                                </TableRow>
+                                                <TableRow>
+                                                    <TableCell><strong>Refund Amount</strong></TableCell>
+                                                    <TableCell>${selectedRefunds.grandTotal.toFixed(2)}</TableCell>
+                                                </TableRow>
+                                            </TableBody>
+                                        </Table>
+                                    </TableContainer>
+
+                                    <Typography variant="h6" sx={{ mt: 2 }}>Order Items</Typography>
+                                    <TableContainer component={Paper} sx={{ mt: 2 }}>
+                                        <Table>
+                                            <TableHead>
+                                                <TableRow>
+                                                    <TableCell><strong>Product</strong></TableCell>
+                                                    <TableCell><strong>Original Price</strong></TableCell>
+                                                    <TableCell><strong>Discount %</strong></TableCell>
+                                                    <TableCell><strong>Discounted Price</strong></TableCell>
+                                                    <TableCell><strong>Quantity</strong></TableCell>
+                                                    <TableCell><strong>Total</strong></TableCell>
+                                                </TableRow>
+                                            </TableHead>
+                                            <TableBody>
+                                                {selectedRefunds.items.length > 0 ? (
+                                                    selectedRefunds.items.map((item, index) => {
+                                                        const price = item.price || 0;
+                                                        const discountPercentage = item.discountPercentage || 0;
+                                                        const discountedPrice = price * (1 - discountPercentage / 100);
+                                                        return (
+                                                            <TableRow key={index}>
+                                                                <TableCell>{item.productName}</TableCell>
+                                                                <TableCell>${price.toFixed(2)}</TableCell>
+                                                                <TableCell>{discountPercentage.toFixed(2)}%</TableCell>
+                                                                <TableCell>${discountedPrice.toFixed(2)}</TableCell>
+                                                                <TableCell>{item.quantity}</TableCell>
+                                                                <TableCell>${(discountedPrice * item.quantity).toFixed(2)}</TableCell>
+                                                            </TableRow>
+                                                        );
+                                                    })
+                                                ) : (
+                                                    <TableRow>
+                                                        <TableCell colSpan={6} align="center">No items in this order.</TableCell>
+                                                    </TableRow>
+                                                )}
+                                                <TableRow>
+                                                    <TableCell colSpan={5} align="right"><strong>Grand Total</strong></TableCell>
+                                                    <TableCell>
+                                                        <strong>
+                                                            ${selectedRefunds?.items?.reduce((total, item) => {
+                                                                const discountedPrice = item.price * (1 - (item.discountPercentage || 0) / 100);
+                                                                return total + discountedPrice * item.quantity;
+                                                            }, 0).toFixed(2) || "0"}
+                                                        </strong>
+                                                    </TableCell>
+                                                </TableRow>
+                                            </TableBody>
+                                        </Table>
+                                    </TableContainer>
+                                </>
+                            )}
+                        </DialogContent>
+                    </Dialog>
+                )}
 
                 {/* Empty state handling */}
-                {/*{deliveries.length === 0 && (*/}
-                {/*    <Typography sx={{ mt: 2 }} color="textSecondary">*/}
-                {/*        No deliveries available.*/}
-                {/*    </Typography>*/}
-                {/*)}*/}
+                {refunds.length === 0 && (
+                    <Typography sx={{ mt: 2 }} color="textSecondary">
+                        No refunds available.
+                    </Typography>
+                )}
 
                 <ToastContainer />
             </Box>

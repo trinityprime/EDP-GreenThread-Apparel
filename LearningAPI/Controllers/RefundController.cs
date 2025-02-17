@@ -9,150 +9,172 @@ using System.Security.Claims;
 
 namespace LearningAPI.Controllers
 {
-	[ApiController]
-	[Route("api/[controller]")]
-	public class RefundController : ControllerBase
-	{
-		private readonly MyDbContext _context;
+    [ApiController]
+    [Route("api/[controller]")]
+    public class RefundController : ControllerBase
+    {
+        private readonly MyDbContext _context;
 
-		public RefundController(MyDbContext context)
-		{
-			_context = context;
-		}
+        public RefundController(MyDbContext context)
+        {
+            _context = context;
+        }
 
-		// 📋 GET All Refund Requests
-		[HttpGet]
-		public async Task<IActionResult> GetAllRefunds()
-		{
-			var refunds = await _context.Refunds
-				.Include(r => r.User)
-				.Include(r => r.Order)
-				.OrderByDescending(r => r.RefundDate)
-				.ToListAsync();
+        // 📋 GET All Refunds (Admin Only)
+        [HttpGet]
+        public async Task<IActionResult> GetAllRefunds()
+        {
+            var refunds = await _context.Refunds
+                .Include(r => r.Order)
+                .OrderBy(r => r.RefundID)
+                .Select(r => new
+                {
+                    r.RefundID,
+                    r.OrderID,
+                    r.RefundAmount,
+                    r.RefundStatus,
+                    r.RefundDate,
+                    r.Reason
+                })
+                .ToListAsync();
 
-			return Ok(refunds);
-		}
+            return Ok(refunds);
+        }
 
-		// 📌 GET Refund by ID
-		[HttpGet("{id}")]
-		public async Task<IActionResult> GetRefundById(int id)
-		{
-			var refund = await _context.Refunds
-				.Include(r => r.User)
-				.Include(r => r.Order)
-				.FirstOrDefaultAsync(r => r.RefundID == id);
+        [HttpGet("{id}")]
+        [Authorize(Roles = "Admin")]
+        public async Task<IActionResult> GetRefundById(int id)
+        {
+            var refund = await _context.Refunds
+                .Include(r => r.Order)
+                .FirstOrDefaultAsync(r => r.RefundID == id);
 
-			if (refund == null)
-				return NotFound("Refund not found.");
+            if (refund == null)
+                return NotFound("Refund not found.");
 
-			return Ok(refund);
-		}
+            var result = new
+            {
+                refund.RefundID,
+                refund.OrderID,
+                refund.RefundAmount,
+                refund.RefundStatus,
+                refund.RefundDate,
+                refund.Reason
+            };
 
-		// ➕ POST Request a Refund
-		[HttpPost, Authorize]
-		public async Task<IActionResult> CreateRefund([FromBody] Refund refundRequest)
-		{
-			int userId = GetUserId(); // Get the logged-in user ID
-
-			var order = await _context.Orders.FindAsync(refundRequest.OrderID);
-			if (order == null)
-				return BadRequest("Invalid OrderID. Order does not exist.");
-
-			// Ensure only the user who placed the order can request a refund
-			if (order.UserID != userId)
-				return Forbid("You are not authorized to refund this order.");
-
-			// Check if a refund already exists for the order
-			var existingRefund = await _context.Refunds.FirstOrDefaultAsync(r => r.OrderID == refundRequest.OrderID);
-			if (existingRefund != null)
-				return BadRequest("A refund has already been requested for this order.");
-
-			// Auto-set refund amount to the order's grand total
-			var newRefund = new Refund
-			{
-				UserID = userId,
-				OrderID = refundRequest.OrderID,
-				RefundAmount = order.GrandTotal, // Set refund amount to order's total
-				RefundDate = DateTime.UtcNow,
-				RefundStatus = Refund.Refund_Status.Pending
-			};
-
-			_context.Refunds.Add(newRefund);
-			await _context.SaveChangesAsync();
-
-			return CreatedAtAction(nameof(GetRefundById), new { id = newRefund.RefundID }, newRefund);
-		}
+            return Ok(result);
+        }
 
 
-		// 🔄 PUT Approve or Reject Refund (Admin Only)
-		[HttpPut("{id}/status"), Authorize(Roles = "Admin")]
-		public async Task<IActionResult> UpdateRefundStatus(int id, [FromBody] Refund.Refund_Status newStatus)
-		{
-			var refund = await _context.Refunds.FindAsync(id);
-			if (refund == null)
-				return NotFound("Refund not found.");
+        // 📋 GET Refunds for Logged-in User
+        [HttpGet("user-refunds/{userId}"), Authorize]
+        public async Task<IActionResult> GetUserRefunds(int userId)
+        {
+            var refunds = await _context.Refunds
+                .Include(r => r.Order)
+                .Where(r => r.UserID == userId)
+                .OrderBy(r => r.RefundID)
+                .Select(r => new
+                {
+                    r.RefundID,
+                    r.OrderID,
+                    r.RefundAmount,
+                    r.RefundStatus,
+                    r.RefundDate,
+                    r.Reason
+                })
+                .ToListAsync();
 
-			if (!Enum.IsDefined(typeof(Refund.Refund_Status), newStatus))
-				return BadRequest("Invalid refund status.");
+            return Ok(refunds);
+        }
 
-			refund.RefundStatus = newStatus;
-			refund.RefundDate = DateTime.UtcNow;
+        // ➕ POST Request a Refund
+        [HttpPost, Authorize]
+        public async Task<IActionResult> CreateRefund([FromBody] Refund refundRequest)
+        {
+            if (refundRequest.OrderID == 0)
+                return BadRequest("Invalid OrderID. Please provide a valid order.");
 
-			// Optional: Set Order status to Cancelled when refund is completed
-			if (newStatus == Refund.Refund_Status.Completed)
-			{
-				var order = await _context.Orders.FindAsync(refund.OrderID);
-				if (order != null)
-				{
-					order.OrderStatus = OrderStatus.Cancelled;
-				}
-			}
+            int userId = GetUserId();
 
-			await _context.SaveChangesAsync();
-			return Ok(new { message = $"Refund status updated to {newStatus}." });
-		}
+            var order = await _context.Orders.FindAsync(refundRequest.OrderID);
+            if (order == null)
+                return BadRequest("Order not found.");
 
-		// 🔄 PUT Update Refund (Users Can Only Change Status, Not Amount)
-		[HttpPut("{id}"), Authorize]
-		public async Task<IActionResult> UpdateRefund(int id, [FromBody] Refund refund)
-		{
-			var existingRefund = await _context.Refunds.FindAsync(id);
-			if (existingRefund == null) return NotFound();
+            if (order.OrderStatus != OrderStatus.Completed)
+                return BadRequest("Only completed orders can be refunded.");
 
-			int userId = GetUserId();
-			if (existingRefund.UserID != userId) return Forbid();
+            if (order.UserID != userId)
+                return Forbid("Unauthorized request.");
 
-			// ✅ Allow Only Status Updates, Prevent Refund Amount Change
-			existingRefund.RefundStatus = refund.RefundStatus;
-			existingRefund.RefundDate = DateTime.UtcNow;
+            var existingRefund = await _context.Refunds.FirstOrDefaultAsync(r => r.OrderID == refundRequest.OrderID);
+            if (existingRefund != null)
+                return BadRequest("Refund already requested for this order.");
 
-			await _context.SaveChangesAsync();
-			return Ok(new { message = $"Refund ID {id} updated successfully." });
-		}
+            var newRefund = new Refund
+            {
+                UserID = userId,
+                OrderID = refundRequest.OrderID,
+                RefundAmount = order.GrandTotal,
+                RefundDate = DateTime.UtcNow,
+                RefundStatus = Refund.Refund_Status.Pending,
+                Reason = refundRequest.Reason ?? "No reason provided."
+            };
 
-		// 🗑️ DELETE Refund (Only If Pending)
-		[HttpDelete("{id}"), Authorize]
-		public async Task<IActionResult> DeleteRefund(int id)
-		{
-			var refund = await _context.Refunds.FindAsync(id);
-			if (refund == null) return NotFound();
+            _context.Refunds.Add(newRefund);
+            await _context.SaveChangesAsync();
 
-			int userId = GetUserId();
-			if (refund.UserID != userId) return Forbid();
+            return CreatedAtAction(nameof(GetUserRefunds), new { userId = userId }, newRefund);
+        }
 
-			if (refund.RefundStatus != Refund.Refund_Status.Pending)
-				return BadRequest("Only pending refunds can be deleted.");
+        // 🔄 PUT Approve or Reject Refund (Admin Only)
+        [HttpPut("{id}/status"), Authorize(Roles = "Admin")]
+        public async Task<IActionResult> UpdateRefundStatus(int id, [FromBody] Refund.Refund_Status newStatus)
+        {
+            var refund = await _context.Refunds.FindAsync(id);
+            if (refund == null)
+                return NotFound("Refund not found.");
 
-			_context.Refunds.Remove(refund);
-			await _context.SaveChangesAsync();
-			return NoContent();
-		}
+            refund.RefundStatus = newStatus;
+            refund.RefundDate = DateTime.UtcNow;
 
-		// 🔍 Helper method to get the current user's ID safely
-		private int GetUserId()
-		{
-			var claim = User.Claims.FirstOrDefault(c => c.Type == ClaimTypes.NameIdentifier)?.Value;
-			return int.TryParse(claim, out int userId) ? userId : 0;
-		}
-	}
+            // ✅ If refund is completed, auto-cancel order
+            if (newStatus == Refund.Refund_Status.Completed)
+            {
+                var order = await _context.Orders.FindAsync(refund.OrderID);
+                if (order != null)
+                {
+                    order.OrderStatus = OrderStatus.Cancelled;
+                }
+            }
+
+            await _context.SaveChangesAsync();
+            return Ok(new { message = $"Refund status updated to {newStatus}." });
+        }
+
+        // 🗑️ DELETE Refund (Only If Pending)
+        [HttpDelete("{id}")]
+        [Authorize(Roles = "Admin")]
+        public async Task<IActionResult> DeleteRefund(int id)
+        {
+            var refund = await _context.Refunds.FindAsync(id);
+            if (refund == null)
+                return NotFound("Refund not found.");
+
+            if (refund.RefundStatus != Refund.Refund_Status.Rejected)
+                return BadRequest("Only rejected refunds can be deleted.");
+
+            _context.Refunds.Remove(refund);
+            await _context.SaveChangesAsync();
+            return NoContent();
+        }
+
+
+        // 🔍 Helper method to get the current user's ID
+        private int GetUserId()
+        {
+            var claim = User.Claims.FirstOrDefault(c => c.Type == ClaimTypes.NameIdentifier)?.Value;
+            return int.TryParse(claim, out int userId) ? userId : 0;
+        }
+    }
 }

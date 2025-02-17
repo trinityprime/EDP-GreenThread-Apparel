@@ -325,6 +325,11 @@ namespace LearningAPI.Migrations
                     b.Property<int>("OrderID")
                         .HasColumnType("int");
 
+                    b.Property<string>("Reason")
+                        .IsRequired()
+                        .HasMaxLength(500)
+                        .HasColumnType("nvarchar(500)");
+
                     b.Property<decimal>("RefundAmount")
                         .HasColumnType("decimal(18,2)");
 

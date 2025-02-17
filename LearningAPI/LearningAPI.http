@@ -241,14 +241,16 @@ Authorization: Bearer {{token}}
 
 
 {
-  "orderID": 1,
-  "refundAmount": 50.00
+  "orderID": 3,
+  "refundAmount": 50.00,
+  "reason": "gay"
 }
 
 
 ###
 
-GET {{LearningAPI_HostAddress}}/api/refund
+GET {{LearningAPI_HostAddress}}/api/Refund
+Authorization: Bearer {{token}}
 
 ###
 

@@ -11,19 +11,21 @@ function Profile() {
     const [openPasswordDialog, setOpenPasswordDialog] = useState(false);
     const [actionType, setActionType] = useState(""); 
     const [open, setOpen] = useState(false);
-    const [open2FA, setOpen2FA] = useState(false);
-    const [qrData, setQrData] = useState(null);
-    const [verificationCode, setVerificationCode] = useState("");
+    const [open2FA, setOpen2FA] = useState(false); // For 2FA dialog
+    const [qrData, setQrData] = useState(null); // Stores QR code data
+    const [verificationCode, setVerificationCode] = useState(""); // For 2FA verification
     const [disable2FAOpen, setDisable2FAOpen] = useState(false);
-    const [recoveryCodes, setRecoveryCodes] = useState([]);
-    const [error, setError] = useState("");
+    const [backupCodes, setBackupCodes] = useState([]);
+    const [error, setError] = useState(""); // For error messages
     const navigate = useNavigate();
 
+    // Existing functions...
     const handleUpdateClick = () => navigate("/update-user");
     const handleShoppingCartClick = () => navigate("/shopping-cart");
     const handleOrdersClick = () => navigate("/orders");
     const handleViewProductsClick = () => navigate("/products");
     const handleDeliveriesClick = () => navigate("/deliveries");
+    const handleRefundsClick = () => navigate("/refunds");
     const handleDeactivateClick = () => setOpen(true);
     const handleClose = () => setOpen(false);
 
@@ -49,7 +51,7 @@ function Profile() {
                 setOpen2FA(false);
                 setError("");
                 setUser({ ...user, isTwoFactorEnabled: true });
-                setRecoveryCodes(res.data.recoveryCodes);
+                setBackupCodes(res.data.recoveryCodes);
                 alert("2FA Enabled! Please save your backup codes.");
             })
             .catch((error) => {
@@ -137,7 +139,11 @@ function Profile() {
             </Button>
 
             <Button variant="contained" color="success" sx={{ mt: 2, ml: 2 }} onClick={handleDeliveriesClick}>
-                View Deliveries
+                View My Deliveries
+            </Button>
+
+            <Button variant="contained" color="success" sx={{ mt: 2, ml: 2 }} onClick={handleRefundsClick}>
+                View My Refunds
             </Button>
 
             <Button variant="contained" color="error" sx={{ mt: 2, ml: 2 }} onClick={handleDeactivateClick}>
@@ -215,20 +221,20 @@ function Profile() {
             </Dialog>
 
             {/* Backup Codes Dialog */}
-            <Dialog open={recoveryCodes.length > 0} onClose={() => setRecoveryCodes([])}>
+            <Dialog open={backupCodes.length > 0} onClose={() => setBackupCodes([])}>
                 <DialogTitle>Backup Codes</DialogTitle>
                 <DialogContent>
                     <DialogContentText>
                         Save these codes securely. Each code can be used once:
                     </DialogContentText>
                     <Box sx={{ mt: 2 }}>
-                        {recoveryCodes.map((code, index) => (
+                        {backupCodes.map((code, index) => (
                             <Typography key={index} variant="body2">{code}</Typography>
                         ))}
                     </Box>
                 </DialogContent>
                 <DialogActions>
-                    <Button onClick={() => setRecoveryCodes([])}>Close</Button>
+                    <Button onClick={() => setBackupCodes([])}>Close</Button>
                 </DialogActions>
             </Dialog>
 

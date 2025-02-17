@@ -1,10 +1,5 @@
-import React, { useContext, useEffect, useState } from "react";
-import {
-    Box,
-    Typography,
-    Table,
-    TableBody,
-    TableCell,
+﻿import React, { useContext, useEffect, useState } from "react";
+import { Box, Typography, Table, TableBody, TableCell,
     TableContainer,
     TableHead,
     TableRow,
@@ -52,9 +47,10 @@ function Orders() {
         };
 
         if (user?.userID) {
-            fetchOrders();
+            fetchOrders(); // ✅ Now calling the function
         }
-    }, [user]);
+    }, [user]); 
+
 
     const navigateToDeliveryForm = (orderID) => {
         navigate(`/deliveries/${orderID}`);
@@ -99,10 +95,12 @@ function Orders() {
     return (
         <Box sx={{ mt: 4, maxWidth: "900px", mx: "auto", p: 2 }}>
             <Typography variant="h5" sx={{ mb: 2 }}>My Orders</Typography>
-            To make a delivery, please press the icon beside the View Order button under the Actions column.
-
+            To make a delivery, please press the icon beside the View Order button under the Actions column.<br></br><br></br>
+            To request a refund, please click on the request refund button under the Actions column.
+            <br></br>
+            <br></br>
             {orders.length === 0 ? (
-                <Typography sx={{ textAlign: "center", mt: 4 }}>
+                <Typography sx={{ textAlign: "center", mt: 4 , p: 5}}>
                     There are no orders, consider shopping!
                 </Typography>
             ) : (
@@ -125,17 +123,38 @@ function Orders() {
                                     <TableCell>${order.grandTotal.toFixed(2)}</TableCell>
                                     <TableCell>{order.orderStatus}</TableCell>
                                     <TableCell>
-                                        <Button
-                                            variant="outlined"
-                                            onClick={() => fetchOrderDetails(order.orderID)}
-                                        >
-                                            View Order
-                                        </Button>
-                                        <LocalShippingIcon
-                                            color="primary"
-                                            sx={{ ml: 2, cursor: "pointer" }}
-                                            onClick={() => navigateToDeliveryForm(order.orderID)}
-                                        />
+                                        <Box sx={{ display: "flex", flexDirection: "column", gap: 1 }}>
+                                            <Button
+                                                variant="outlined"
+                                                onClick={() => fetchOrderDetails(order.orderID)}
+                                            >
+                                                View Order
+                                            </Button>
+
+                                            <Button
+                                                variant="contained"
+                                                color="primary"
+                                                startIcon={<LocalShippingIcon />}
+                                                onClick={() => navigateToDeliveryForm(order.orderID)}
+                                            >
+                                                Delivery Details
+                                            </Button>
+
+                                            {/* Show Refund Button Only If Order is Completed */}
+                                            {order.orderStatus === "Completed" ? (
+                                                <Button
+                                                    variant="contained"
+                                                    color="warning"
+                                                    onClick={() => navigate(`/request-refund/${order.orderID}`)}
+                                                >
+                                                    Request Refund
+                                                </Button>
+                                            ) : (
+                                                <Button variant="contained" color="error" disabled>
+                                                    Refund Unavailable
+                                                </Button>
+                                            )}
+                                        </Box>
                                     </TableCell>
                                 </TableRow>
                             ))}

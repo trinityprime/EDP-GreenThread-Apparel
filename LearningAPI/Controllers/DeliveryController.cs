@@ -38,8 +38,30 @@ namespace LearningAPI.Controllers
 			return Ok(delivery);
 		}
 
-		// ➕ POST Create a New Delivery
-		[HttpPost]
+
+        // 📌 GET Deliveries for a Specific Order
+        [HttpGet("order/{orderID}")]
+        public async Task<IActionResult> GetDeliveriesByOrderId(int orderID)
+        {
+            Console.WriteLine($"Fetching deliveries for Order ID: {orderID}"); // Debugging log
+
+            var deliveries = await _context.Deliveries
+                .Where(d => d.OrderID == orderID)
+                .ToListAsync();
+
+            if (!deliveries.Any())
+            {
+                Console.WriteLine($"No deliveries found for Order ID {orderID}");
+                return NotFound($"No deliveries found for Order ID {orderID}.");
+            }
+
+            return Ok(deliveries);
+        }
+
+
+
+        // ➕ POST Create a New Delivery
+        [HttpPost]
 		public async Task<IActionResult> CreateDelivery([FromBody] Delivery delivery)
 		{
 			if (delivery == null)
@@ -59,53 +81,74 @@ namespace LearningAPI.Controllers
 			return CreatedAtAction(nameof(GetDeliveryById), new { id = delivery.DeliveryID }, delivery);
 		}
 
-		// 📝 PUT Update Delivery Address
-		[HttpPut("{id}/address")]
-		public async Task<IActionResult> UpdateDeliveryAddress(int id, [FromBody] string newAddress)
-		{
-			var delivery = await _context.Deliveries.FindAsync(id);
-			if (delivery == null)
-				return NotFound("Delivery not found.");
+        // 📝 PUT Update Delivery Address
 
-			if (string.IsNullOrWhiteSpace(newAddress) || newAddress.Length > 255)
-				return BadRequest("Invalid address. Ensure it is not empty and within 255 characters.");
 
-			delivery.Address = newAddress;
-			delivery.UpdatedAt = DateTime.UtcNow;
+        // 📝 PUT Update Delivery Address
+        [HttpPut("{id}/address")]
+        public async Task<IActionResult> UpdateDeliveryAddress(int id, [FromBody] string newAddress)
+        {
+            var delivery = await _context.Deliveries.FindAsync(id);
+            if (delivery == null)
+                return NotFound("Delivery not found.");
 
-			await _context.SaveChangesAsync();
-			return Ok(new { message = "Address updated successfully." });
-		}
+            // Validate address input
+            if (string.IsNullOrWhiteSpace(newAddress) || newAddress.Length > 255)
+                return BadRequest("Invalid address. Ensure it is not empty and within 255 characters.");
 
-		// 🔄 PUT Update Delivery Status
-		[HttpPut("{id}/status")]
-		public async Task<IActionResult> UpdateDeliveryStatus(int id, [FromBody] Delivery.Delivery_Status newStatus)
-		{
-			var delivery = await _context.Deliveries.FindAsync(id);
-			if (delivery == null)
-				return NotFound("Delivery not found.");
+            delivery.Address = newAddress;
+            delivery.UpdatedAt = DateTime.UtcNow;
 
-			if (!Enum.IsDefined(typeof(Delivery.Delivery_Status), newStatus))
-				return BadRequest("Invalid delivery status.");
+            await _context.SaveChangesAsync();
+            return Ok(new { message = "Address updated successfully." });
+        }
 
-			delivery.DeliveryStatus = newStatus;
-			delivery.UpdatedAt = DateTime.UtcNow;
+        public class UpdateDeliveryStatusRequest
+        {
+            public string NewStatus { get; set; }
+        }
 
-			await _context.SaveChangesAsync();
-			return Ok(new { message = $"Delivery status updated to {newStatus}." });
-		}
+        [HttpPut("{id}/status")]
+        public async Task<IActionResult> UpdateDeliveryStatus(int id, [FromBody] UpdateDeliveryStatusRequest request)
+        {
+            var delivery = await _context.Deliveries.FindAsync(id);
+            if (delivery == null)
+                return NotFound("Delivery not found.");
 
-		// 🗑️ DELETE Delivery
-		[HttpDelete("{id}")]
-		public async Task<IActionResult> DeleteDelivery(int id)
-		{
-			var delivery = await _context.Deliveries.FindAsync(id);
-			if (delivery == null)
-				return NotFound("Delivery not found.");
+            if (string.IsNullOrWhiteSpace(request.NewStatus))
+                return BadRequest("Delivery status cannot be empty.");
 
-			_context.Deliveries.Remove(delivery);
-			await _context.SaveChangesAsync();
-			return NoContent();
-		}
-	}
+            // Ensure case-insensitive enum parsing
+            if (!Enum.TryParse(request.NewStatus, true, out Delivery.Delivery_Status parsedStatus))
+                return BadRequest("Invalid delivery status.");
+
+            delivery.DeliveryStatus = parsedStatus;
+            delivery.UpdatedAt = DateTime.UtcNow;
+
+            await _context.SaveChangesAsync();
+            return Ok(new { message = $"Delivery status updated to {parsedStatus}." });
+        }
+
+
+        // 🗑️ DELETE Delivery
+        [HttpDelete("{id}")]
+        public async Task<IActionResult> DeleteDelivery(int id)
+        {
+            var delivery = await _context.Deliveries.FindAsync(id);
+            if (delivery == null)
+                return NotFound("Delivery not found.");
+
+            try
+            {
+                _context.Deliveries.Remove(delivery);
+                await _context.SaveChangesAsync();
+                return Ok(new { message = "Delivery deleted successfully." });
+            }
+            catch (DbUpdateException)
+            {
+                return BadRequest("Cannot delete delivery as it is linked to other records.");
+            }
+        }
+
+    }
 }
