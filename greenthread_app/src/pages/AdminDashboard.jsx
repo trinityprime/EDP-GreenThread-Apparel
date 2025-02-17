@@ -245,6 +245,17 @@ function AdminDashboard() {
         }
     };
 
+      const fetchDeliveries = async () => {
+        try {
+            const response = await http.get("/api/Delivery");
+            setDeliveries(response.data);
+        } catch (err) {
+            toast.error("Failed to fetch deliveries.");
+        } finally {
+            setLoading(false);
+        }
+    };
+
     const handleUpdateDeliveryAddress = async (id, newAddress) => {
         try {
             await http.put(`/api/Delivery/${id}/address`, newAddress, {
@@ -259,15 +270,24 @@ function AdminDashboard() {
 
     const handleUpdateDeliveryStatus = async (id, newStatus) => {
         try {
-            await http.put(`/api/Delivery/${id}/status`, JSON.stringify(newStatus), {
+            await http.put(`/api/Delivery/${id}/status`, newStatus, { // Send raw string
                 headers: { "Content-Type": "application/json" },
             });
-            toast.success("Delivery status updated successfully.");
-            fetchDeliveries();
+
+            toast.success(`Delivery ${id} updated to ${newStatus}`);
+            setDeliveries((prevDeliveries) =>
+                prevDeliveries.map((delivery) =>
+                    delivery.deliveryID === id
+                        ? { ...delivery, deliveryStatus: newStatus }
+                        : delivery
+                )
+            );
         } catch (err) {
             toast.error("Failed to update delivery status.");
+            console.error("Error updating delivery status:", err);
         }
     };
+
 
     const handleDeleteDelivery = async (id) => {
         try {
@@ -278,6 +298,11 @@ function AdminDashboard() {
             toast.error("Failed to delete delivery.");
         }
     };
+
+   
+
+   
+
 
     // Check if the admin is the super admin
     const isSuperAdmin = (admin) => {
@@ -817,12 +842,9 @@ function AdminDashboard() {
                                     sx={{ mr: 2 }}
                                 />
                                 <Select
-                                    value={selectedDelivery.deliveryStatus}
+                                    value={selectedDelivery?.deliveryStatus || "Pending"}
                                     onChange={(e) =>
-                                        handleUpdateDeliveryStatus(
-                                            selectedDelivery.deliveryID,
-                                            e.target.value
-                                        )
+                                        handleUpdateDeliveryStatus(selectedDelivery.deliveryID, e.target.value)
                                     }
                                     sx={{ width: "200px" }}
                                 >
@@ -831,6 +853,7 @@ function AdminDashboard() {
                                     <MenuItem value="Delivered">Delivered</MenuItem>
                                     <MenuItem value="Cancelled">Cancelled</MenuItem>
                                 </Select>
+
                             </Box>
                         </DialogContent>
                     </Dialog>
