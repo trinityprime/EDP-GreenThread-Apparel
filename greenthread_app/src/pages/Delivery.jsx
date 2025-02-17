@@ -42,9 +42,8 @@ function Delivery() {
         try {
             console.log(`Fetching orders for userID: ${user.userID}`);
 
-            //  Fetch orders belonging to the logged-in user
+            // Fetch orders belonging to the logged-in user
             const orderResponse = await http.get(`/api/Order/user-orders/${user.userID}`);
-
             const orders = orderResponse.data;
 
             if (!orders.length) {
@@ -53,7 +52,7 @@ function Delivery() {
                 return;
             }
 
-            //  Fetch deliveries for each order ID
+            // Fetch deliveries for each order ID
             const allDeliveries = [];
             for (const order of orders) {
                 try {
@@ -73,14 +72,21 @@ function Delivery() {
         }
     };
 
-
     const handleUpdateDeliveryAddress = async (id, newAddress) => {
+        if (!newAddress.trim()) {
+            toast.error("Address cannot be empty.");
+            return;
+        }
+
         try {
-            await http.put(`/api/Delivery/${id}/address`, newAddress, {
-                headers: { "Content-Type": "application/json" },
-            });
+            await http.put(
+                `/api/Delivery/${id}/address`,
+                { newAddress }, // Send as JSON object
+                { headers: { "Content-Type": "application/json" } }
+            );
             toast.success("Address updated successfully.");
-            fetchDeliveries(user.userID); // Refresh deliveries after update
+            fetchDeliveries(); // Refresh deliveries after update
+            setSelectedDelivery(null); // Close dialog
         } catch (err) {
             toast.error("Failed to update address.");
         }
@@ -118,7 +124,11 @@ function Delivery() {
                                     <TableCell>{delivery.deliveryID}</TableCell>
                                     <TableCell>{delivery.orderID}</TableCell>
                                     <TableCell>{delivery.address}</TableCell>
-                                    <TableCell>{delivery.deliveryStatus}</TableCell>
+                                    <TableCell>
+                                        <Typography sx={{ fontWeight: "bold", color: "gray" }}>
+                                            {delivery.deliveryStatus} {/* Read-only */}
+                                        </Typography>
+                                    </TableCell>
                                     <TableCell>
                                         <Button
                                             variant="outlined"
@@ -146,23 +156,40 @@ function Delivery() {
                     <DialogTitle>Delivery Details</DialogTitle>
                     <DialogContent>
                         <Typography><strong>Order ID:</strong> {selectedDelivery.orderID}</Typography>
-                        <Typography><strong>Address:</strong> {selectedDelivery.address}</Typography>
-                        <Typography><strong>Status:</strong> {selectedDelivery.deliveryStatus}</Typography>
 
-                        {/* User can only update the Address */}
+                        {/* Read-only Delivery Status */}
+                        <Box sx={{ mt: 2 }}>
+                            <TextField
+                                label="Delivery Status"
+                                value={selectedDelivery.deliveryStatus}
+                                fullWidth
+                                disabled // Completely uneditable field
+                            />
+                        </Box>
+
+                        {/* Editable Address Field */}
                         <Box sx={{ mt: 2 }}>
                             <TextField
                                 label="Update Address"
                                 defaultValue={selectedDelivery.address}
+                                fullWidth
                                 onBlur={(e) =>
                                     handleUpdateDeliveryAddress(
                                         selectedDelivery.deliveryID,
                                         e.target.value
                                     )
                                 }
-                                fullWidth
                             />
                         </Box>
+
+                        <Button
+                            variant="contained"
+                            color="primary"
+                            sx={{ mt: 2 }}
+                            onClick={handleCloseDialog}
+                        >
+                            Close
+                        </Button>
                     </DialogContent>
                 </Dialog>
             )}

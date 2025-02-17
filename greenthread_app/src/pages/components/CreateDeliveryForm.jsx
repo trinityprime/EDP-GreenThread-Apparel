@@ -9,6 +9,7 @@ function CreateDeliveryForm() {
     const [orderDetails, setOrderDetails] = useState(null);
     const [deliveryAddress, setDeliveryAddress] = useState("");
     const [deliveryStatus, setDeliveryStatus] = useState("Pending");
+    const [deliveryExists, setDeliveryExists] = useState(false); // Track existing delivery
 
     useEffect(() => {
         const fetchOrderDetails = async () => {
@@ -20,7 +21,19 @@ function CreateDeliveryForm() {
             }
         };
 
+        const checkExistingDelivery = async () => {
+            try {
+                const response = await http.get(`/api/Delivery/order/${orderID}`);
+                if (response.data.length > 0) {
+                    setDeliveryExists(true); // Delivery already exists
+                }
+            } catch (err) {
+                console.warn("No existing delivery found.");
+            }
+        };
+
         fetchOrderDetails();
+        checkExistingDelivery();
     }, [orderID]);
 
     const handleCreateDelivery = async () => {
@@ -38,6 +51,7 @@ function CreateDeliveryForm() {
         try {
             await http.post("/api/Delivery", payload);
             toast.success("Delivery created successfully.");
+            setDeliveryExists(true); // Prevent further creation
         } catch (err) {
             toast.error("Failed to create delivery.");
         }
@@ -81,20 +95,26 @@ function CreateDeliveryForm() {
                             onChange={(e) => setDeliveryAddress(e.target.value)}
                             sx={{ mb: 2 }}
                         />
+
                         <TextField
                             fullWidth
                             label="Delivery Status"
                             variant="outlined"
                             value={deliveryStatus}
-                            onChange={(e) => setDeliveryStatus(e.target.value)}
+                            InputProps={{
+                                readOnly: true,
+                            }}
+                            disabled
                             sx={{ mb: 2 }}
                         />
+
                         <Button
                             variant="contained"
                             color="primary"
                             onClick={handleCreateDelivery}
+                            disabled={deliveryExists} // Disable if delivery exists
                         >
-                            Create Delivery
+                            {deliveryExists ? "Delivery Already Created" : "Create Delivery"}
                         </Button>
                     </Paper>
                 </Grid>
