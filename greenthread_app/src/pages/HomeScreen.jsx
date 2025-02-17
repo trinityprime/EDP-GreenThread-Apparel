@@ -16,23 +16,8 @@ const HomeScreen = () => {
         <main className="bg-eco-light min-h-screen">
             {/* Hero Section */}
             <div className="relative min-h-screen flex items-center justify-center overflow-hidden bg-eco-light">
-                <div className="absolute inset-0 z-0">
-                    <img
-                        src="/photo-1482938289607-e9573fc25ebb"
-                        alt="Nature background"
-                        className="w-full h-full object-cover opacity-20"
-                    />
-                </div>
 
                 <div className="container relative z-10 px-4 py-32 mx-auto text-center">
-                    <motion.span
-                        initial={{ opacity: 0, y: 20 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        transition={{ duration: 0.6 }}
-                        className="inline-block px-4 py-1.5 mb-6 text-sm font-medium tracking-wider text-eco-dark uppercase bg-white/80 rounded-full backdrop-blur-sm"
-                    >
-                        Sustainable Fashion
-                    </motion.span>
 
                     <motion.h1
                         initial={{ opacity: 0, y: 20 }}

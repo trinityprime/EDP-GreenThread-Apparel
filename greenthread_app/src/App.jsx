@@ -11,7 +11,7 @@ import {
     Menu,
     MenuItem,
 } from "@mui/material";
-import { BrowserRouter as Router, Routes, Route, Link } from "react-router-dom";
+import { BrowserRouter as Router, Routes, Route, Link, Navigate } from "react-router-dom";
 import { ThemeProvider } from "@mui/material/styles";
 import MyTheme from "./themes/MyTheme";
 import Tutorials from "./pages/Tutorials";
@@ -213,8 +213,8 @@ function App() {
 
                     <Container>
                         <Routes>
-                            <Route path="/" element={<Tutorials />} />
                             <Route path="/tutorials" element={<Tutorials />} />
+                            <Route path="/" element={<Navigate to="/home" replace />} />
                             <Route path="/home" element={<HomeScreen />} />
                             <Route path="/register" element={<Register />} />
                             <Route path="/login" element={<Login />} />
