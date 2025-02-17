@@ -1,38 +1,39 @@
-﻿using LearningAPI.Models;
-using System.ComponentModel.DataAnnotations;
+﻿using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 using System.Text.Json.Serialization;
 
 namespace LearningAPI.Models
 {
-	public class Refund
-	{
-		public int RefundID { get; set; }
+    public class Refund
+    {
+        [Key]
+        public int RefundID { get; set; }
 
-		[ForeignKey("UserID")]
-		public int UserID { get; set; }
-		public virtual User? User { get; set; } // navigate to User model
+        [Required]
+        [ForeignKey("UserID")]
+        public int UserID { get; set; }
+        public virtual User? User { get; set; }
 
-		[ForeignKey("OrderID")]
-		public int OrderID { get; set; }
-		public virtual Order? Order { get; set; } // navigate to Order model
+        [Required]
+        [ForeignKey("OrderID")]
+        public int OrderID { get; set; }
+        public virtual Order? Order { get; set; }
 
-		[Required]
-		public decimal RefundAmount { get; set; }
+        [Required]
+        public decimal RefundAmount { get; set; }
 
-		[Required]
-		public DateTime RefundDate { get; set; }
+        [Required]
+        public DateTime RefundDate { get; set; }
 
-		[Required]
-		[JsonConverter(typeof(JsonStringEnumConverter))] // serialized as a string
-		public Refund_Status RefundStatus { get; set; }
+        [Required]
+        [JsonConverter(typeof(JsonStringEnumConverter))]
+        public Refund_Status RefundStatus { get; set; }
 
-		// Enum for Refund Status
-		public enum Refund_Status
-		{
-			Pending,
-			Rejected,
-			Completed
-		}
-	}
+        public enum Refund_Status
+        {
+            Pending,
+            Rejected,
+            Completed
+        }
+    }
 }

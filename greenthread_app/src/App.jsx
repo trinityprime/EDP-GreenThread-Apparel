@@ -27,7 +27,8 @@ import CreatePaymentForm from "./pages/components/CreatePaymentForm";
 import Payment from "./pages/Payment";
 import Delivery from "./pages/Delivery";
 import CreateDeliveryForm from "./pages/components/CreateDeliveryForm";
-
+import Refund from "./pages/Refund"; 
+import CreateRefundForm from "./pages/components/CreateRefundForm"; 
 
 function App() {
     const [user, setUser] = useState(null);
@@ -109,7 +110,8 @@ function App() {
                             <Route path="/payments" element={<Payment />} /> 
                             <Route path="/deliveries" element={<Delivery />} /> 
                             <Route path="/deliveries/:orderID" element={<CreateDeliveryForm />} />
-
+                            <Route path="/refunds" element={<Refund />} />
+                            <Route path="/request-refund/:orderID" element={<CreateRefundForm />} />
                         </Routes>
                     </Container>
                 </ThemeProvider>

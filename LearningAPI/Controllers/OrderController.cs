@@ -158,11 +158,8 @@ namespace LearningAPI.Controllers
                             .ThenInclude(sci => sci.Product)
                     .FirstOrDefaultAsync(p => p.PaymentID == orderRequest.PaymentID);
 
-                if (payment == null)
-                {
-                    _logger.LogError($"Payment not found for PaymentID: {orderRequest.PaymentID}");
-                    return BadRequest("Payment not found.");
-                }
+                if (payment == null || payment.PaymentStatus != PaymentStatus.Completed)
+                    return BadRequest("Invalid or incomplete payment.");
 
                 _logger.LogInformation($"Payment found. PaymentID: {payment.PaymentID}, ShoppingCartID: {payment.ShoppingCartID}");
 
@@ -207,7 +204,7 @@ namespace LearningAPI.Controllers
                     ShoppingCartID = shoppingCart.ShoppingCartID,
                     OrderDate = DateTime.UtcNow,
                     GrandTotal = grandTotal,
-                    OrderStatus = OrderStatus.Pending,
+                    OrderStatus = OrderStatus.Completed,
                     CreatedAt = DateTime.UtcNow,
                     UpdatedAt = DateTime.UtcNow,
                     OrderItems = shoppingCart.ShoppingCartItems.Select(cartItem => new OrderItem

@@ -171,7 +171,7 @@ namespace LearningAPI.Controllers
                     ShoppingCartID = shoppingCart.ShoppingCartID,
                     OrderDate = DateTime.UtcNow,
                     GrandTotal = grandTotal,
-                    OrderStatus = OrderStatus.Pending,
+                    OrderStatus = OrderStatus.Completed,
                     CreatedAt = DateTime.UtcNow,
                     UpdatedAt = DateTime.UtcNow,
                     OrderItems = shoppingCart.ShoppingCartItems.Select(cartItem => new OrderItem
