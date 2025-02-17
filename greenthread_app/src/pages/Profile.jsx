@@ -60,7 +60,7 @@ function Profile() {
                 setOpen2FA(false);
                 setError("");
                 setUser({ ...user, isTwoFactorEnabled: true });
-                setBackupCodes(res.data.RecoveryCodes);
+                setBackupCodes(res.data.recoveryCodes);
                 alert("2FA Enabled! Please save your backup codes.");
             })
             .catch((error) => {

@@ -91,6 +91,18 @@ namespace LearningAPI.Controllers
 			if (!user.IsTwoFactorEnabled)
 				return BadRequest("2FA is not enabled for this account");
 
+			// Check if the code is a recovery code
+			if (user.RecoveryCodes.Contains(request.Code))
+			{
+				// Remove the used recovery code
+				user.RecoveryCodes.Remove(request.Code);
+				_context.SaveChanges();
+
+				var accessToken = CreateToken(user);
+				return Ok(new { AccessToken = accessToken });
+			}
+
+			// Verify TOTP code
 			var totp = new Totp(Base32Encoding.ToBytes(user.TwoFactorSecret));
 			bool isValid = totp.VerifyTotp(request.Code, out _);
 
@@ -100,7 +112,7 @@ namespace LearningAPI.Controllers
 				return Ok(new { AccessToken = accessToken });
 			}
 
-			return BadRequest("Invalid 2FA code");
+			return BadRequest("Invalid 2FA code or recovery code");
 		}
 
 		// In _2FAController.cs
@@ -156,7 +168,7 @@ namespace LearningAPI.Controllers
 			return token;
 		}
 
-		private List<string> GenerateRecoveryCodes()
+		private List<string> GenerateRecoveryCodes()	
 		{
 			// Generate 8 recovery codes (example implementation)
 			var codes = new List<string>();

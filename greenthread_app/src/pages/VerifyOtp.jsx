@@ -1,4 +1,3 @@
-import { useState, useRef } from "react";
 import { useState, useRef, useEffect } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { Box, Typography, TextField, Button, Grid } from "@mui/material";
@@ -22,11 +21,13 @@ export default function VerifyOtp() {
             handleVerifyOtp();
         }
     }, [otp]);
+
     useEffect(() => {
         if (attempts >= 5) {
             setIsBlocked(true);
             setRemainingTime(30);
             toast.error("Too many attempts. Please try again in 30 seconds.");
+
             const interval = setInterval(() => {
                 setRemainingTime((prev) => {
                     if (prev <= 1) {
@@ -131,6 +132,7 @@ export default function VerifyOtp() {
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({ email }),
             });
+
             const data = await response.json();
             if (response.ok) {
                 toast.success("OTP resent successfully!");
@@ -162,7 +164,8 @@ export default function VerifyOtp() {
                             onKeyDown={(e) => handleKeyDown(index, e)}
                             variant="outlined"
                             sx={{ width: 50, textAlign: "center" }}
-                            inputProps={{ maxLength: 1, style: { textAlign: "center", fontSize: "1.5rem" }, pattern: "[0-9]*", inputMode: "numeric" }}                        />
+                            inputProps={{ maxLength: 1, style: { textAlign: "center", fontSize: "1.5rem" }, pattern: "[0-9]*", inputMode: "numeric" }}
+                        />
                     </Grid>
                 ))}
             </Grid>

@@ -55,7 +55,8 @@ namespace LearningAPI.Controllers
 				UpdatedAt = now,
 				IsDeactivated = false,
 				Role = "User",
-				IsTwoFactorEnabled = false
+				IsTwoFactorEnabled = false,
+				RecoveryCodes = new List<string>()
 			};
 
 			// Add user
@@ -93,7 +94,8 @@ namespace LearningAPI.Controllers
 				return Ok(new
 				{
 					Requires2FA = true,
-					Email = foundUser.Email
+					Email = foundUser.Email,
+					RecoveryCodes = foundUser.RecoveryCodes
 				});
 			}
 
