@@ -28,6 +28,7 @@ namespace LearningAPI.Models
         [Required]
         [JsonConverter(typeof(JsonStringEnumConverter))]
         public Refund_Status RefundStatus { get; set; }
+        public string? Reason { get; internal set; }
 
         public enum Refund_Status
         {

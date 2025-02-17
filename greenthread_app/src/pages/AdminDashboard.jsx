@@ -16,6 +16,8 @@ function AdminDashboard() {
     const [selectedOrder, setSelectedOrder] = useState(null);
     const [deliveries, setDeliveries] = useState([]);
     const [selectedDelivery, setSelectedDelivery] = useState(null);
+    const [refunds, setRefunds] = useState([]);
+    const [selectedRefunds, setSelectedRefunds] = useState(null);
     const [loadingDetails, setLoadingDetails] = useState(false);
     const navigate = useNavigate();
     const [loading, setLoading] = useState(true); 

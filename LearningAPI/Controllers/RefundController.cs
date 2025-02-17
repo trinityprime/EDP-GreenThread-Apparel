@@ -20,35 +20,20 @@ namespace LearningAPI.Controllers
             _context = context;
         }
 
-        // 📋 GET All Refund Requests (Admin Only)
-        [HttpGet, Authorize(Roles = "Admin")]
-        public async Task<IActionResult> GetAllRefunds()
+        // 📋 GET Refunds for Logged-in User
+        [HttpGet("user-refunds/{userId}"), Authorize]
+        public async Task<IActionResult> GetUserRefunds(int userId)
         {
             var refunds = await _context.Refunds
-                .Include(r => r.User)
                 .Include(r => r.Order)
+                .Where(r => r.UserID == userId)
                 .OrderByDescending(r => r.RefundDate)
                 .ToListAsync();
 
             return Ok(refunds);
         }
 
-        // 📌 GET Refund by ID (User or Admin)
-        [HttpGet("{id}")]
-        public async Task<IActionResult> GetRefundById(int id)
-        {
-            var refund = await _context.Refunds
-                .Include(r => r.User)
-                .Include(r => r.Order)
-                .FirstOrDefaultAsync(r => r.RefundID == id);
-
-            if (refund == null)
-                return NotFound("Refund not found.");
-
-            return Ok(refund);
-        }
-
-        // ➕ POST Request a Refund (User)
+        // ➕ POST Request a Refund
         [HttpPost, Authorize]
         public async Task<IActionResult> CreateRefund([FromBody] Refund refundRequest)
         {
@@ -56,18 +41,21 @@ namespace LearningAPI.Controllers
 
             var order = await _context.Orders.FindAsync(refundRequest.OrderID);
             if (order == null)
-                return BadRequest("Invalid OrderID. Order does not exist.");
+                return BadRequest("Order not found.");
 
-            // Ensure only the user who placed the order can request a refund
+            // Ensure only completed orders can be refunded
+            if (order.OrderStatus != OrderStatus.Completed)
+                return BadRequest("Only completed orders can be refunded.");
+
+            // Ensure user owns the order
             if (order.UserID != userId)
-                return Forbid("You are not authorized to refund this order.");
+                return Forbid("Unauthorized request.");
 
-            // Check if a refund already exists for the order
+            // Prevent duplicate refund requests
             var existingRefund = await _context.Refunds.FirstOrDefaultAsync(r => r.OrderID == refundRequest.OrderID);
             if (existingRefund != null)
-                return BadRequest("A refund has already been requested for this order.");
+                return BadRequest("Refund already requested for this order.");
 
-            // Refund Amount = Order Total
             var newRefund = new Refund
             {
                 UserID = userId,
@@ -80,7 +68,7 @@ namespace LearningAPI.Controllers
             _context.Refunds.Add(newRefund);
             await _context.SaveChangesAsync();
 
-            return CreatedAtAction(nameof(GetRefundById), new { id = newRefund.RefundID }, newRefund);
+            return CreatedAtAction(nameof(GetUserRefunds), new { userId = userId }, newRefund);
         }
 
         // 🔄 PUT Approve or Reject Refund (Admin Only)
@@ -91,13 +79,10 @@ namespace LearningAPI.Controllers
             if (refund == null)
                 return NotFound("Refund not found.");
 
-            if (!Enum.IsDefined(typeof(Refund.Refund_Status), newStatus))
-                return BadRequest("Invalid refund status.");
-
             refund.RefundStatus = newStatus;
             refund.RefundDate = DateTime.UtcNow;
 
-            // ✅ Auto-cancel order if refund is completed
+            // ✅ If refund is completed, auto-cancel order
             if (newStatus == Refund.Refund_Status.Completed)
             {
                 var order = await _context.Orders.FindAsync(refund.OrderID);
@@ -118,9 +103,6 @@ namespace LearningAPI.Controllers
             var refund = await _context.Refunds.FindAsync(id);
             if (refund == null) return NotFound();
 
-            int userId = GetUserId();
-            if (refund.UserID != userId) return Forbid();
-
             if (refund.RefundStatus != Refund.Refund_Status.Pending)
                 return BadRequest("Only pending refunds can be deleted.");
 
@@ -129,7 +111,7 @@ namespace LearningAPI.Controllers
             return NoContent();
         }
 
-        // 🔍 Helper method to get the current user's ID safely
+        // 🔍 Helper method to get the current user's ID
         private int GetUserId()
         {
             var claim = User.Claims.FirstOrDefault(c => c.Type == ClaimTypes.NameIdentifier)?.Value;

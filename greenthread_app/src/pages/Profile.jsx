@@ -22,6 +22,7 @@ function Profile() {
     const handleOrdersClick = () => navigate("/orders");
     const handleViewProductsClick = () => navigate("/products");
     const handleDeliveriesClick = () => navigate("/deliveries");
+    const handleRefundsClick = () => navigate("/refunds");
     const handleDeactivateClick = () => setOpen(true);
     const handleClose = () => setOpen(false);
 
@@ -117,7 +118,11 @@ function Profile() {
             </Button>
 
             <Button variant="contained" color="success" sx={{ mt: 2, ml: 2 }} onClick={handleDeliveriesClick}>
-                View Deliveries
+                View My Deliveries
+            </Button>
+
+            <Button variant="contained" color="success" sx={{ mt: 2, ml: 2 }} onClick={handleRefundsClick}>
+                View My Refunds
             </Button>
 
             <Button variant="contained" color="error" sx={{ mt: 2, ml: 2 }} onClick={handleDeactivateClick}>

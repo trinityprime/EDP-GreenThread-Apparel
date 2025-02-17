@@ -285,7 +285,8 @@ namespace LearningAPI.Migrations
                     OrderID = table.Column<int>(type: "int", nullable: false),
                     RefundAmount = table.Column<decimal>(type: "decimal(18,2)", nullable: false),
                     RefundDate = table.Column<DateTime>(type: "datetime2", nullable: false),
-                    RefundStatus = table.Column<int>(type: "int", nullable: false)
+                    RefundStatus = table.Column<int>(type: "int", nullable: false),
+                    Reason = table.Column<string>(type: "nvarchar(max)", nullable: true)
                 },
                 constraints: table =>
                 {

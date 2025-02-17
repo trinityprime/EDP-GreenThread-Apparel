@@ -12,7 +12,7 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace LearningAPI.Migrations
 {
     [DbContext(typeof(MyDbContext))]
-    [Migration("20250217051431_initialcreate")]
+    [Migration("20250217055219_initialcreate")]
     partial class initialcreate
     {
         /// <inheritdoc />
@@ -327,6 +327,9 @@ namespace LearningAPI.Migrations
 
                     b.Property<int>("OrderID")
                         .HasColumnType("int");
+
+                    b.Property<string>("Reason")
+                        .HasColumnType("nvarchar(max)");
 
                     b.Property<decimal>("RefundAmount")
                         .HasColumnType("decimal(18,2)");
