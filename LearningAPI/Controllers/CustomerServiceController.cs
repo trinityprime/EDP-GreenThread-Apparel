@@ -40,8 +40,20 @@ namespace LearningAPI.Controllers
 			return Ok(request);
 		}
 
-		// ➕ POST Create a New Customer Service Request
-		[HttpPost]
+        // 📌 GET Customer Service Requests by UserID
+        [HttpGet("user/{userID}")]
+        public async Task<IActionResult> GetByUserId(int userID)
+        {
+            var requests = await _context.CustomerServices
+                .Where(cs => cs.UserID == userID)
+                .ToListAsync();
+
+            return Ok(requests);
+        }
+
+
+        // ➕ POST Create a New Customer Service Request
+        [HttpPost]
 		public async Task<IActionResult> Create([FromBody] CustomerService request)
 		{
 			if (request == null)

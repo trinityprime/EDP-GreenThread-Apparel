@@ -271,3 +271,19 @@ Content-Type: application/json
 GET {{LearningAPI_HostAddress}}/api/customerservice
 
 ###
+
+@id=0
+GET {{LearningAPI_HostAddress}}/api/customerservice/{{id}}
+
+###
+
+PATCH {{LearningAPI_HostAddress}}/api/customerservice/1/admin-update
+Content-Type: application/json
+
+{
+  "comment": "I received a defective item and need a replacement.",
+  "status": "Completed", 
+  "adminNote": "Issue resolved by admin."
+}
+
+###

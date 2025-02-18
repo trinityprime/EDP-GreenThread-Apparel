@@ -42,6 +42,10 @@ import Refund from "./pages/Refund";
 import CreateRefundForm from "./pages/components/CreateRefundForm";
 import HomeScreen from "./pages/HomeScreen";
 
+import CustomerServiceForm from "./pages/CustomerServiceForm";
+import CustomerServiceList from "./pages/CustomerServiceList";
+import AdminCustomerService from "./pages/AdminCustomerService";
+
 // Importing icons from MUI Icons
 import AccountCircle from "@mui/icons-material/AccountCircle";
 import ReceiptLongIcon from "@mui/icons-material/ReceiptLong";
@@ -144,6 +148,16 @@ function App() {
                                         >
                                             <ShoppingCartIcon />
                                         </IconButton>
+
+                                        <IconButton
+                                            color="inherit"
+                                            component={Link}
+                                            to="/customer-service"
+                                            title="Customer Service"
+                                        >
+                                            <StorefrontIcon />
+                                        </IconButton>
+
                                         {/* Dropdown for profile-related actions */}
                                         <IconButton
                                             size="large"
@@ -168,23 +182,36 @@ function App() {
                                             open={Boolean(anchorEl)}
                                             onClose={handleClose}
                                         >
-                                            {user?.role === "Admin" ? (
-                                                <MenuItem
-                                                    onClick={handleClose}
-                                                    component={Link}
-                                                    to="/admin-dashboard"
-                                                >
-                                                    View Dashboard
-                                                </MenuItem>
-                                            ) : (
-                                                <MenuItem
-                                                    onClick={handleClose}
-                                                    component={Link}
-                                                    to="/profile"
-                                                >
-                                                    View Profile
-                                                </MenuItem>
-                                            )}
+                                            {
+                                                user?.role === "Admin" ? (
+                                                    <>
+                                                        <MenuItem
+                                                            onClick={handleClose}
+                                                            component={Link}
+                                                            to="/admin-dashboard"
+                                                        >
+                                                            View Dashboard
+                                                        </MenuItem>
+                                                        <MenuItem
+                                                            onClick={handleClose}
+                                                            component={Link}
+                                                            to="/admin-customer-service"
+                                                        >
+                                                            View Customer Service
+                                                        </MenuItem>
+                                                    </>
+                                                ) : (
+                                                    <MenuItem
+                                                        onClick={handleClose}
+                                                        component={Link}
+                                                        to="/profile"
+                                                    >
+                                                        View Profile
+                                                    </MenuItem>
+                                                )
+                                            }
+
+
                                             <MenuItem
                                                 onClick={() => {
                                                     handleClose();
@@ -239,6 +266,10 @@ function App() {
                             <Route path="/deliveries/:orderID" element={<CreateDeliveryForm />} />
                             <Route path="/refunds" element={<Refund />} />
                             <Route path="/request-refund/:orderID" element={<CreateRefundForm />} />
+
+                            <Route path="/create-customer-service" element={<CustomerServiceForm />} />
+                            <Route path="/customer-service" element={<CustomerServiceList />} />
+                            <Route path="/admin-customer-service" element={<AdminCustomerService />} />
                         </Routes>
                     </Container>
                 </ThemeProvider>
