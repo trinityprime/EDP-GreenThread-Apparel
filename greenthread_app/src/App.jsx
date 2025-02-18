@@ -84,68 +84,85 @@ function App() {
                 <ThemeProvider theme={MyTheme}>
                     <AppBar position="static" className="AppBar">
                         <Container>
-                            <Toolbar disableGutters>
-                                <Link
-                                    to="/home"
-                                    style={{ textDecoration: "none", color: "inherit" }}
-                                >
-                                    <Typography variant="h6" component="div">
-                                        GreenThreadApparel
-                                    </Typography>
-                                </Link>
-                                <Box sx={{ flexGrow: 1 }}></Box>
+                            <Toolbar disableGutters sx={{ display: "flex", justifyContent: "space-between" }}>
+                                {/* Centered Logo + Title */}
+                                <Box sx={{ flex: 1, display: "flex", justifyContent: "center" }}>
+                                    <Link
+                                        to="/home"
+                                        style={{
+                                            display: "flex",
+                                            alignItems: "center",
+                                            textDecoration: "none",
+                                            color: "inherit",
+                                            gap: 8
+                                        }}
+                                    >
+                                        <Box sx={{ flexGrow: 1, display: "flex", justifyContent: "center" }}>
+                                            <Typography variant="h6" component="div">
+                                                GreenThreadApparel
+                                            </Typography>
+                                        </Box>
+                                    </Link>
+                                </Box>
+
+                                {/* Right-side Icons/Buttons */}
                                 {user ? (
-                                    <>
-                                        {/* Icon buttons for orders, deliveries, refunds, payments, products, shopping cart */}
-                                        <IconButton
-                                            color="inherit"
-                                            component={Link}
-                                            to="/orders"
-                                            title="View Orders"
-                                        >
-                                            <ReceiptLongIcon />
-                                        </IconButton>
-                                        <IconButton
-                                            color="inherit"
-                                            component={Link}
-                                            to="/deliveries"
-                                            title="View Delivery"
-                                        >
-                                            <LocalShippingIcon />
-                                        </IconButton>
-                                        <IconButton
-                                            color="inherit"
-                                            component={Link}
-                                            to="/refunds"
-                                            title="View Refunds"
-                                        >
-                                            <MoneyOffIcon />
-                                        </IconButton>
-                                        <IconButton
-                                            color="inherit"
-                                            component={Link}
-                                            to="/payments"
-                                            title="View Payment"
-                                        >
-                                            <PaymentIcon />
-                                        </IconButton>
-                                        <IconButton
-                                            color="inherit"
-                                            component={Link}
-                                            to="/products"
-                                            title="View Products"
-                                        >
-                                            <StorefrontIcon />
-                                        </IconButton>
-                                        <IconButton
-                                            color="inherit"
-                                            component={Link}
-                                            to="/shopping-cart"
-                                            title="View Shopping Cart"
-                                        >
-                                            <ShoppingCartIcon />
-                                        </IconButton>
-                                        {/* Dropdown for profile-related actions */}
+                                    <Box sx={{ display: "flex", alignItems: "center" }}>
+                                        {/* Render these icons only for non-admin users */}
+                                        {user.role !== "Admin" && (
+                                            <>
+                                                <IconButton
+                                                    color="inherit"
+                                                    component={Link}
+                                                    to="/orders"
+                                                    title="View Orders"
+                                                >
+                                                    <ReceiptLongIcon />
+                                                </IconButton>
+                                                <IconButton
+                                                    color="inherit"
+                                                    component={Link}
+                                                    to="/deliveries"
+                                                    title="View Delivery"
+                                                >
+                                                    <LocalShippingIcon />
+                                                </IconButton>
+                                                <IconButton
+                                                    color="inherit"
+                                                    component={Link}
+                                                    to="/refunds"
+                                                    title="View Refunds"
+                                                >
+                                                    <MoneyOffIcon />
+                                                </IconButton>
+                                                <IconButton
+                                                    color="inherit"
+                                                    component={Link}
+                                                    to="/payments"
+                                                    title="View Payment"
+                                                >
+                                                    <PaymentIcon />
+                                                </IconButton>
+                                                <IconButton
+                                                    color="inherit"
+                                                    component={Link}
+                                                    to="/products"
+                                                    title="View Products"
+                                                >
+                                                    <StorefrontIcon />
+                                                </IconButton>
+                                                <IconButton
+                                                    color="inherit"
+                                                    component={Link}
+                                                    to="/shopping-cart"
+                                                    title="View Shopping Cart"
+                                                >
+                                                    <ShoppingCartIcon />
+                                                </IconButton>
+                                            </>
+                                        )}
+
+                                        {/* Profile / Account Circle */}
                                         <IconButton
                                             size="large"
                                             edge="end"
@@ -195,17 +212,16 @@ function App() {
                                                 Logout
                                             </MenuItem>
                                         </Menu>
-                                    </>
+                                    </Box>
                                 ) : (
-                                    // If no user is logged in, show Login and Register
-                                    <>
+                                    <Box sx={{ display: "flex", gap: 2 }}>
                                         <Button color="inherit" component={Link} to="/login">
                                             Login
                                         </Button>
                                         <Button color="inherit" component={Link} to="/register">
                                             Register
                                         </Button>
-                                    </>
+                                    </Box>
                                 )}
                             </Toolbar>
                         </Container>

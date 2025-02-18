@@ -14,7 +14,10 @@ import {
     DialogTitle,
     TextField,
     Divider,
+    InputAdornment,
+    IconButton,
 } from "@mui/material";
+import { Visibility, VisibilityOff } from '@mui/icons-material';
 import { useNavigate } from "react-router-dom";
 import axios from "../http";
 import { QRCodeSVG } from "qrcode.react";
@@ -38,6 +41,8 @@ function Profile() {
     const [disable2FAOpen, setDisable2FAOpen] = useState(false);
     const [backupCodes, setBackupCodes] = useState([]);
     const [error, setError] = useState("");
+    const [showDialogPassword, setShowDialogPassword] = useState(false);
+    const [passwordError, setPasswordError] = useState("");
 
     // To manage focus for each input box
     const inputRefs = useRef([]);
@@ -88,6 +93,14 @@ function Profile() {
     };
 
     const handlePasswordSubmit = () => {
+        if (!password) {
+            setPasswordError("Password is required.");
+            return;
+        }
+
+        // Reset error if password is valid
+        setPasswordError("");
+
         if (actionType === "enable") {
             axios
                 .post(
@@ -261,17 +274,33 @@ function Profile() {
                 <DialogTitle>Authenticate</DialogTitle>
                 <DialogContent>
                     <DialogContentText>
-                        Please enter your password to{" "}
-                        {actionType === "enable" ? "enable" : "disable"} Two-Factor Authentication.
+                        Please enter your password to {actionType === "enable" ? "enable" : "disable"} Two-Factor Authentication.
                     </DialogContentText>
                     <TextField
                         autoFocus
                         fullWidth
                         label="Password"
-                        type="password"
+                        type={showDialogPassword ? "text" : "password"}
                         value={password}
-                        onChange={(e) => setPassword(e.target.value)}
+                        onChange={(e) => {
+                            setPassword(e.target.value);
+                            if (e.target.value) setPasswordError("");
+                        }}
+                        error={Boolean(passwordError)}
+                        helperText={passwordError}
                         sx={{ mt: 2 }}
+                        InputProps={{
+                            endAdornment: (
+                                <InputAdornment position="end">
+                                    <IconButton
+                                        onClick={() => setShowDialogPassword(!showDialogPassword)}
+                                        edge="end"
+                                    >
+                                        {showDialogPassword ? <VisibilityOff /> : <Visibility />}
+                                    </IconButton>
+                                </InputAdornment>
+                            )
+                        }}
                     />
                 </DialogContent>
                 <DialogActions>

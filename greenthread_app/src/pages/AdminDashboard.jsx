@@ -505,6 +505,7 @@ function AdminDashboard() {
                                                 >
                                                     {admin.isDeactivated ? "Activate" : "Deactivate"}
                                                 </Button>
+
                                                 <Button
                                                     variant="contained"
                                                     size="small"
@@ -587,11 +588,17 @@ function AdminDashboard() {
                                                 <Button
                                                     variant="contained"
                                                     size="small"
-                                                    color="error"
+                                                    sx={{
+                                                        backgroundColor: user.isDeactivated ? 'warning.main' : 'error.main',
+                                                        '&:hover': {
+                                                            backgroundColor: user.isDeactivated ? 'warning.dark' : 'error.dark',
+                                                        },
+                                                    }}
                                                     onClick={() => handleToggleActivation(user.userID, 'user', user.isDeactivated)}
                                                 >
-                                                    Deactivate
+                                                    {user.isDeactivated ? "Activate" : "Deactivate"}
                                                 </Button>
+
                                             </Box>
                                         </TableCell>
                                     </TableRow>
@@ -634,7 +641,6 @@ function AdminDashboard() {
                                 <TableCell sx={{ fontWeight: 'bold', color: 'white' }}>Name</TableCell>
                                 <TableCell sx={{ fontWeight: 'bold', color: 'white' }}>Price</TableCell>
                                 <TableCell sx={{ fontWeight: 'bold', color: 'white' }}>Stock</TableCell>
-                                <TableCell sx={{ fontWeight: 'bold', color: 'white' }}>Status</TableCell>
                                 <TableCell sx={{ fontWeight: 'bold', color: 'white' }}>Actions</TableCell>
                             </TableRow>
                         </TableHead>
@@ -646,15 +652,6 @@ function AdminDashboard() {
                                         <TableCell>{product.productName}</TableCell>
                                         <TableCell>${product.finalPrice.toFixed(2)}</TableCell>
                                         <TableCell>{product.stock}</TableCell>
-                                        <TableCell>
-                                            <Typography
-                                                variant="body2"
-                                                fontWeight="medium"
-                                                color={product.status === "Active" ? 'success.main' : 'error.main'}
-                                            >
-                                                {product.status}
-                                            </Typography>
-                                        </TableCell>
                                         <TableCell>
                                             <Box sx={{ display: 'flex', gap: 1 }}>
                                                 <Button
